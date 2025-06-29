@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import ttk 
 import customtkinter as ctk
+
+
+""" follow up dependancies for redundant imports """
+
 import requests
 import os 
 from dotenv import load_dotenv
