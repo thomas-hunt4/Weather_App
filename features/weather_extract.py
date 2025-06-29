@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 """ View raw data for key value extractions """
-class parse_json:
+class WeatherProcessor:
     def view_raw_json(data, title="API Response"):
         print(f"\n==={title} ===")
         print(json.dumps(data, indent=2))
@@ -80,5 +80,14 @@ class parse_json:
                 continue
     
         return locations
+    
+    """ Select location through user input for Weather and Geo request    """
+    # @staticmethod
+    def select_city():
+        pass 
+    
+    """ Alter API call for 'units' metric/imperial """
+    def temp_unit_converter():
+        pass
 
 

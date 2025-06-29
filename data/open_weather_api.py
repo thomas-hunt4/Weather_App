@@ -1,7 +1,9 @@
 import requests
 import os
 from dotenv import load_dotenv
-from gui.gui_main import select_city
+from features.weather_extract import WeatherProcessor
+
+city = WeatherProcessor.select_city()
 
 # import API Keys and URLs from .env
 load_dotenv()
@@ -15,10 +17,10 @@ ow_geo_url = os.getenv("open_weather_geo_url")
 
 """ Handling Open Weather API as stand alone """
 class OpenWeatherAPI:
-    def fetch_open_weather(select_city):
+    def fetch_open_weather(self,select_city):
         try: 
             params = {
-                "?q=": select_city,
+                "q=": city,
                 "appid": weather_api_key, 
                 "units": "metric" #temp_unit_select  #create function in logic to handle and attach to button selector
             }
@@ -35,10 +37,10 @@ class OpenWeatherAPI:
             return None, str(e)
     
     """ fetch lat/lon and location information for maps/other features """
-    def fetch_open_geo():
+    def fetch_open_geo(select_city):
         try:
             params = {
-                "?q=": {select_city},
+                "q=": city,
                 "&limit=": "5",
                 "&appid=": {weather_api_key}
             }
