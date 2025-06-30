@@ -20,7 +20,7 @@ class OpenWeatherAPI:
     def fetch_open_weather(self,select_city):
         try: 
             params = {
-                "q=": city,
+                "q": select_city,
                 "appid": weather_api_key, 
                 "units": "metric" #temp_unit_select  #create function in logic to handle and attach to button selector
             }

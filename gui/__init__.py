@@ -1,5 +1,6 @@
 
+from features.weather_extract import WeatherProcessor
 
-from .gui_main import App
+from .v2gui_main import App
 
 __all__ = ['App']

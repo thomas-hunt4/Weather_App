@@ -2,6 +2,11 @@ import tkinter as tk
 from tkinter import ttk 
 import customtkinter as ctk
 
+# Link Data and Feature files for interactions
+from data.open_weather_api import OpenWeatherAPI
+from features.weather_extract import WeatherProcessor
+
+
 """ default to dark mode but add variable and button """
 ctk.set_appearance_mode("dark")  
 ctk.set_default_color_theme("blue")
@@ -42,6 +47,10 @@ class HomePage(ctk.CTkFrame):
         super().__init__(parent)
         self.controller = controller
 
+        # API and Default weather display
+        self.weather_api = OpenWeatherAPI()
+        self.update_weather("New Haven")
+
         self._configure_grid()
         self._build_header()
         self._build_weather_frame()
@@ -50,6 +59,7 @@ class HomePage(ctk.CTkFrame):
         self._build_sun_frame()
         self._build_panic_button_frame()
         self._build_weather_control_frame()
+
 
     def _configure_grid(self):
         for row in range(5):
@@ -101,7 +111,7 @@ class HomePage(ctk.CTkFrame):
         temp_frame.grid_columnconfigure(0, weight=1)
         self.temp_label = ctk.CTkLabel(temp_frame, text="Temperature:") #font?
         self.temp_label.grid(row=0, column=0, padx=10, pady=5)
-        self.temp_value = ctk.CTkLabel(temp_frame, text="22 ℃") #font?
+        self.temp_value = ctk.CTkLabel(temp_frame, text="{weather['temperature']} ℃") #font?
         self.temp_value.grid(row=1, column=0, sticky="n")
 
 
@@ -142,6 +152,15 @@ class HomePage(ctk.CTkFrame):
         self.precip_value = ctk.CTkLabel(precip_frame, text="4%") #font/direction symbols?
         self.precip_value.grid(row=1, column=0, sticky="n")
 
+        """ Connect to Features """
+    def update_weather(self, city):
+        data, error = self.weather_api.fetch_open_weather(city)
+        if error:
+            print("Error:", error)
+            return
+        weather = WeatherProcessor.extract_weather_info(data)
+        """ Follow Up on this Comment dude """ 
+        # self.display_weather(weather)
         # Features Frame -> Search bar and buttons to activate Features
     def _build_features_frame(self):
         features_frame = ctk.CTkFrame(self,corner_radius=15)
@@ -155,20 +174,22 @@ class HomePage(ctk.CTkFrame):
         city_entry = ctk.CTkEntry(features_frame, placeholder_text="Select City", corner_radius=15,)
         city_entry.grid(row=0, column=0, padx=5, pady=10, sticky="ew")
 
+        city_entry.bind("<Key>", lambda event: self.update_weather(city_entry.get()))
+
         # Nav to forecast page
-        forecast_button = ctk.CTkButton(features_frame, text="Forecast", corner_radius=15)
+        forecast_button = ctk.CTkButton(features_frame, text="Forecast", corner_radius=15, command=lambda: self.controller.show_frame(ForecastPage))
         forecast_button.grid(row=1, padx=5, pady=10, sticky="ew")
 
          # Nav to Trend page
-        trend_button = ctk.CTkButton(features_frame, text="Trending Temperature", corner_radius=15)
+        trend_button = ctk.CTkButton(features_frame, text="Trending Temperature", corner_radius=15, command=lambda: self.controller.show_frame(TrendPage))
         trend_button.grid(row=2, padx=5, pady=10, sticky="ew")
 
         # Nav to Historical page
-        historical_button = ctk.CTkButton(features_frame, text="Historical Data", corner_radius=15)
+        historical_button = ctk.CTkButton(features_frame, text="Historical Data", corner_radius=15, command=lambda: self.controller.show_frame(HistoricalPage))
         historical_button.grid(row=3, padx=5, pady=10, sticky="ew")
 
         # Weather Alerts TODO toplevel-> user phone/email for Alerts
-        weather_alerts_button = ctk.CTkButton(features_frame, text="Weather Alerts!!", corner_radius=15)
+        weather_alerts_button = ctk.CTkButton(features_frame, text="Weather Alerts!!", corner_radius=15, command=lambda: self.controller.show_frame())
         weather_alerts_button.grid(row=4, padx=5, pady=10, sticky="ew")
 
     def _build_map_frame(self):
@@ -255,7 +276,7 @@ class FirePage(ctk.CTkFrame):
 
 
 """ For testing layout """
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
-    app = App()
-    app.mainloop()
+#     app = App()
+#     app.mainloop()

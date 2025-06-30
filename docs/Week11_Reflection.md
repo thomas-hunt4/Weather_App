@@ -106,6 +106,7 @@ graph TD
 ## Section 4: Data Model Plan
 Fill in your planned data files or tables:  
 I have not made decisions on this yet beyond the core requirements. 
+Depending on where I get on the project this week I will decide if to introduce some larger relational db for some more advanced modeling. I want to make sure I have my core complete and half my features before commiting to something advanced. I will be using json for weather imports and API data dumps and then need to do some more research on putting those to csv or PostGres as an alternative. 
 
 | File/Table Name | Format (txt, json, csv, other) | Example Row |
 |-----------------|--------------------------------|-------------|
