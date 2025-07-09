@@ -19,22 +19,28 @@ weather_url = os.getenv("open_weather_url")
 # Open Weather Geo URL
 ow_geo_url = os.getenv("open_weather_geo_url")
 
-""" Handling Open Weather API as stand alone """
+""" Handling Open Weather API for weather, geo, and associated """
 class OpenWeatherAPI:
     def fetch_open_weather(self,select_city):
         try: 
             params = {
                 "q": select_city,
                 "appid": weather_api_key, 
-                "units": "metric" #temp_unit_select  #create function in logic to handle and attach to button selector
-            }
+                "units": "metric" 
+            } 
+            """ TODO temp_unit_select  #create function in logic to handle and attach to button selector """
             """ 
     Revisit for other response codes/developer tab relay/API call counter function 
             """
+            
             response = requests.get(weather_url, params=params)
             if response.status_code == 200:
                 weather_json_data = response.json()
                 return weather_json_data, None
+            # elif response.status_code == 401: 
+                # fetch_open_weather(self, select_city):
+               
+                """ 401 API related/Handle through retry and alternate API """
             else:
                 return None, f"City {select_city} not found."
         except Exception as e:

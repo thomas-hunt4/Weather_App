@@ -7,6 +7,10 @@ from PIL import ImageTk
 from data.open_weather_api import OpenWeatherAPI
 from features.weather_extract import WeatherProcessor
 
+""" TODO See data.file_handler for addition notes. If additional file and db processes developed into Class, edit imports to reflect this change. """
+# weather file saving and db update. 
+from data.file_handler import save_weather
+
 
 """ default to dark mode but add variable and button """
 ctk.set_appearance_mode("Dark")  
@@ -317,6 +321,9 @@ class HomePage(ctk.CTkFrame):
         if weather:
             self.current_weather = weather
             self.display_weather(weather)
+
+            # save weather data to csv
+            save_weather(weather)
         else:
             print("Failed to fetch weather data")
 
