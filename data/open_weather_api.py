@@ -15,6 +15,7 @@ load_dotenv()
 # Open Weather API and URL
 weather_api_key = os.getenv("open_weather_key")
 weather_url = os.getenv("open_weather_url")
+alternate_api_key = os.getenv("alternate_open_weather_api_key")
 
 # Open Weather Geo URL
 ow_geo_url = os.getenv("open_weather_geo_url")
@@ -37,9 +38,8 @@ class OpenWeatherAPI:
             if response.status_code == 200:
                 weather_json_data = response.json()
                 return weather_json_data, None
-            # elif response.status_code == 401: 
-                # fetch_open_weather(self, select_city):
-               
+            elif response.status_code == 401: 
+                return self.alternate_fetch_open_weather(select_city)
                 """ 401 API related/Handle through retry and alternate API """
             else:
                 return None, f"City {select_city} not found."
@@ -110,3 +110,26 @@ class OpenWeatherAPI:
         "Wind Speed": "wind_new",
         "Temperature": "temp_new"
     }
+
+    def alternate_fetch_open_weather(self, select_city):
+        try: 
+            params = {
+                "q": select_city,
+                "appid": alternate_api_key, 
+                "units": "metric" 
+            } 
+            """ This is primarily to handle bad/expired API key and will have nominal error handling before kicking to tertiary """
+            
+            response = requests.get(weather_url, params=params)
+            if response.status_code == 200:
+                weather_json_data = response.json()
+                return weather_json_data, None
+            # elif response.status_code == 401: 
+                
+               
+                """ 401 API related/Handle through retry and alternate API """
+            else:
+                return None, f"City {select_city} not found."
+        except Exception as e:
+            return None, str(e)
+

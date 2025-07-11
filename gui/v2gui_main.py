@@ -16,6 +16,10 @@ from data.file_handler import save_weather
 ctk.set_appearance_mode("Dark")  
 ctk.set_default_color_theme("blue")
 
+""" import weather alert sms system """
+from features.alerts import SMS_Alerts
+from data.send_sms import twilio_sms
+
 """ TODO some comments are placed above or before the proceeding function that they reference. Explore a way to make that system still collapsible but so that comments are not missed. For now, TODO open the above function to double check for comments. """
 
 class App(ctk.CTk):
@@ -321,9 +325,13 @@ class HomePage(ctk.CTkFrame):
         if weather:
             self.current_weather = weather
             self.display_weather(weather)
-
             # save weather data to csv
             save_weather(weather)
+
+            alertsms = SMS_Alerts()
+            alert = alertsms.weather_alerts(data)
+            if alert:
+                twilio_sms(alert)
         else:
             print("Failed to fetch weather data")
 
