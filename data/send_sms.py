@@ -2,7 +2,7 @@
 import os
 from twilio.rest import Client
 from dotenv import load_dotenv
-# from features.alerts import SMS_Alerts
+from features.alerts import SMS_Alerts
 
 load_dotenv()
 # Find your Account SID and Auth Token at twilio.com/console
@@ -25,9 +25,9 @@ TWILIO_TOLLFREE = os.getenv("TWILIO_TOLLFREE")
 
 
 def twilio_sms(alert):
-    body= (f"{alert['type']} in {alert['location']}, {alert['country']}!\n"
-        f"{alert['instruction']}")
-    
+    # body= (f"{alert['type']} in {alert['location']}, {alert['country']}!\n"
+    #     f"{alert['instruction']}") 
+    body = alert
     message = client.messages.create(
         body=body,
         from_=f"+{TWILIO_TOLLFREE}",

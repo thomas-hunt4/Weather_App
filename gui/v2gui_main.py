@@ -52,7 +52,22 @@ class App(ctk.CTk):
         frame = self.frames[page_class]
         frame.tkraise()
 
-     
+class ToplevelWindow(ctk.CTkToplevel):
+        def __init__(self, parent):
+            super().__init__(parent)
+            self.geometry("600x600")
+            self.title()
+            self.attributes("-topmost", True) # makes window stick to front
+
+            self.grid_columnconfigure(0, weight=1)
+            self.grid_rowconfigure(0, weight=1)
+            label = ctk.CTkLabel(self, text="ALERT!!")
+            label.grid(row=0, column=0, pady=(5,5), padx=10)
+
+            self.content_frame = ctk.CTkFrame(self)
+            self.content_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
+            
+            
         """ landing/main page for app with buttons to navigate to other features. Base weather stats, map inserts """
 class HomePage(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -69,6 +84,7 @@ class HomePage(ctk.CTkFrame):
 
         """ GUI elements to update with location selection """
         self.city_entry = None 
+        self.toplevel_window = None
 
 
         
@@ -236,6 +252,7 @@ class HomePage(ctk.CTkFrame):
         historical_button.grid(row=3, padx=5, pady=10, sticky="ew")
 
         # Weather Alerts TODO toplevel-> user phone/email for Alerts
+        """ TODO Correct widget is not TopLevel, it is CTkInputDialog """
         weather_alerts_button = ctk.CTkButton(features_frame, text="Weather Alerts!!", corner_radius=15, command=lambda: self.controller.show_frame())
         weather_alerts_button.grid(row=4, padx=5, pady=10, sticky="ew")
 
@@ -286,7 +303,7 @@ class HomePage(ctk.CTkFrame):
 
         for row in range(2):
             panic_frame.grid_rowconfigure(row, weight=1)
-
+       
     def _build_weather_control_frame(self):
         weather_control_frame = ctk.CTkFrame(self,corner_radius=15)
         weather_control_frame.grid(row=4, column=4, columnspan=4, rowspan=2, padx=20, pady=20, sticky="nsew")
@@ -296,6 +313,7 @@ class HomePage(ctk.CTkFrame):
     
        
         pass
+    
 
         """ Load to populate display at start up by IP look up"""
     def load_default_weather(self):
@@ -313,7 +331,24 @@ class HomePage(ctk.CTkFrame):
             self.update_weather(city)
             self.city_entry.delete(0, 'end')
     """ TODO revisit for thorough testing, including special characters and location, regional, or linguistic variance. Follow up with through dependencies in Features Frame -> city_entry """
+    
+    def top_level_weather_alert(self, alert):
+        if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            self.toplevel_window = ToplevelWindow(self) # Creates window if its None or Destroyed
+            self.toplevel_window.focus()
 
+            self.toplevel_window.content_frame.grid_rowconfigure(0, weight=1)
+            self.toplevel_window.content_frame.grid_columnconfigure(0, weight=1)
+
+            textbox = ctk.CTkTextbox(self.toplevel_window.content_frame, width=450, height=200)
+            textbox.grid(row=0, column=0, sticky="nsew")
+            textbox.insert("0.0", alert)
+            textbox.configure(state="disabled")
+
+            
+        else:
+            self.toplevel_window.focus() # If window exist, focus it
+            
     def update_weather(self, city):
         print(f"Updating weather for {city}")
         data, error = self.weather_api.fetch_open_weather(city)
@@ -332,6 +367,10 @@ class HomePage(ctk.CTkFrame):
             alert = alertsms.weather_alerts(data)
             if alert:
                 twilio_sms(alert)
+                self.top_level_weather_alert(alert) # checks alerts.py criteria on all searchs and on load
+
+
+            
         else:
             print("Failed to fetch weather data")
 

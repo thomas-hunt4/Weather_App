@@ -39,16 +39,23 @@ class SMS_Alerts:
         781: "tornado" 
 
     }
+    """ TODO work on @classmethod connection, from alerts import, above function @weatheralerts """
     def weather_alerts(self, weather_json):
         code = weather_json["weather"][0]["id"]
         if code in self.ALERT_CODES:
-            return {
+            alertdict = {
                 "type": self.ALERT_CODES[code],
                 "location": weather_json["name"],
                 "country": weather_json["sys"]["country"],
                 "instruction": "Take caution"
             }
+            alert = (f"{alertdict['type']} in {alertdict['location']}, {alertdict['country']}!\n"
+            f"{alertdict['instruction']}")
+
+            return alert
+        
         return None
+        
 
        
 
