@@ -4,7 +4,7 @@ import customtkinter as ctk
 from PIL import ImageTk
 
 # Link Data and Feature files for interactions
-from data.open_weather_api import OpenWeatherAPI
+from data.api_handlers.open_weather_api import OpenWeatherAPI
 from features.weather_extract import WeatherProcessor
 
 """ TODO See data.file_handler for addition notes. If additional file and db processes developed into Class, edit imports to reflect this change. """
@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 
 """ import weather alert sms system """
 from features.alerts import SMS_Alerts
-from data.send_sms import twilio_sms
+from data.api_handlers.send_sms import twilio_sms
 
 """ TODO some comments are placed above or before the proceeding function that they reference. Explore a way to make that system still collapsible but so that comments are not missed. For now, TODO open the above function to double check for comments. """
 
@@ -168,7 +168,7 @@ class HomePage(ctk.CTkFrame):
         temp_frame = ctk.CTkFrame(weather_frame)
         temp_frame.grid(row=1, column=0, columnspan=2, pady=(0,5), sticky="nsew")
         temp_frame.grid_columnconfigure(0, weight=1)
-        self.temp_label = ctk.CTkLabel(temp_frame, text="Temperature:") #font?
+        self.temp_label = ctk.CTkLabel(temp_frame, text="Temperature:") #font? text=(sl.["Temp"])
         self.temp_label.grid(row=0, column=0, padx=10, pady=5)
         self.temp_value = ctk.CTkLabel(temp_frame, text="{weather['temperature']} ℃") #font?
         self.temp_value.grid(row=1, column=0, sticky="n")

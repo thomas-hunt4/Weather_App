@@ -22,6 +22,7 @@ def save_weather(weather_data, filepath="data/weather_history.csv"):
             writer.writerow([
                 datetime.now().strftime("%Y-%m-%d %H:%M"),
                 weather_data.get('city', 'Unknown'),
+                weather_data.get('humidity', 'N\A'),
                 weather_data.get('temperature', 'N\A'),
                 weather_data.get('description', 'N/A')
         ])

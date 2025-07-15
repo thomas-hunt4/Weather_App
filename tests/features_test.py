@@ -1,7 +1,7 @@
 from features.weather_extract import parse_json
 import unittest
 from unittest.mock import patch, Mock
-from data.open_weather_api import OpenWeatherAPI
+from data.api_handlers.open_weather_api import OpenWeatherAPI
 
 class TestOpenWeatherAPI(unittest.TestCase):
 

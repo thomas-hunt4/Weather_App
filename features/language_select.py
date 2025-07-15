@@ -2,7 +2,8 @@
 
 TRANSLATION = {
     "en":{
-        "greeting": "hello"
+        "greeting": "hello",
+        "theme button": "Dark Mode",
     },
     "es":{
         "greeting": "buenas"
@@ -32,5 +33,5 @@ def language_selector(key):
 select_language_update()
 
 
-t = selected_language
+sl = selected_language
 # print(T)
