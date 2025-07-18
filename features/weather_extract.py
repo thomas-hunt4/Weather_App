@@ -9,7 +9,7 @@ class WeatherProcessor:
         print(json.dumps(data, indent=2))
 
 
-    def extract_weather_info(weather_json):
+    def extract_weather_info(self,weather_json):
         """Extract key weather information from API response"""
         if not weather_json:
             return None

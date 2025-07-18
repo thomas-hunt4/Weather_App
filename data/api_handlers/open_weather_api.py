@@ -22,12 +22,13 @@ ow_geo_url = os.getenv("open_weather_geo_url")
 
 """ Handling Open Weather API for weather, geo, and associated """
 class OpenWeatherAPI:
-    def fetch_open_weather(self,select_city):
+    def fetch_open_weather(self,select_city, language="en"):
         try: 
             params = {
                 "q": select_city,
                 "appid": weather_api_key, 
-                "units": "metric" 
+                "units": "metric",
+                "lang": language 
             } 
             """ TODO temp_unit_select  #create function in logic to handle and attach to button selector """
             """ 
@@ -37,6 +38,7 @@ class OpenWeatherAPI:
             response = requests.get(weather_url, params=params)
             if response.status_code == 200:
                 weather_json_data = response.json()
+                print(weather_json_data)
                 return weather_json_data, None
             elif response.status_code == 401: 
                 return self.alternate_fetch_open_weather(select_city)
@@ -111,16 +113,18 @@ class OpenWeatherAPI:
         "Temperature": "temp_new"
     }
 
-    def alternate_fetch_open_weather(self, select_city):
+    def alternate_fetch_open_weather(self, select_city, language="en"):
         try: 
             params = {
                 "q": select_city,
                 "appid": alternate_api_key, 
-                "units": "metric" 
+                "units": "metric",
+                "lang": language 
             } 
             """ This is primarily to handle bad/expired API key and will have nominal error handling before kicking to tertiary """
             
             response = requests.get(weather_url, params=params)
+            
             if response.status_code == 200:
                 weather_json_data = response.json()
                 return weather_json_data, None

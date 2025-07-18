@@ -3,13 +3,17 @@ from tkinter import ttk
 import customtkinter as ctk
 from PIL import ImageTk
 
+
 # Link Data and Feature files for interactions
 from data.api_handlers.open_weather_api import OpenWeatherAPI
 from features.weather_extract import WeatherProcessor
 
 """ TODO See data.file_handler for addition notes. If additional file and db processes developed into Class, edit imports to reflect this change. """
 # weather file saving and db update. 
-from data.file_handler import save_weather
+from data.history_management.file_handler import save_weather
+""" language dictionary files """
+from features.language_select import set_language, get_language
+
 
 
 """ default to dark mode but add variable and button """
@@ -29,6 +33,9 @@ class App(ctk.CTk):
         self.title("Weather Wonderland")
         self.resizable(True, True)
 
+        """ Track theme state """
+        self.theme_mode = "Dark"
+        self.theme_buttons = []
 
         """ main frame for widgets using grid geometry """
         main_frame = ctk.CTkFrame(self)
@@ -51,6 +58,32 @@ class App(ctk.CTk):
     def show_frame(self, page_class):
         frame = self.frames[page_class]
         frame.tkraise()
+
+    """ toggle them parent """
+    def toggle_theme(self):
+        # Toggle theme mode
+        if self.theme_mode == "Dark":
+            ctk.set_appearance_mode("Light")
+            self.theme_mode = "Light"
+        else:
+            ctk.set_appearance_mode("Dark")
+            self.theme_mode = "Dark"
+
+        # Update all theme toggle buttons' text
+        for button in self.theme_buttons:
+            button.configure(text="Dark Mode" if self.theme_mode == "Light" else "Light Mode")
+
+    def update_language(self, selected_lang):
+        print(f"Language changed to {selected_lang}")
+        from features.language_select import set_language
+        set_language(selected_lang)
+
+        # Optional: refresh weather if HomePage has it
+        home_page = self.frames.get(HomePage)
+        if home_page and hasattr(home_page, 'current_weather') and home_page.current_weather:
+            city = home_page.current_weather.get('city')
+            if city:
+                home_page.update_weather(city)    
 
 class ToplevelWindow(ctk.CTkToplevel):
         def __init__(self, parent):
@@ -118,7 +151,7 @@ class HomePage(ctk.CTkFrame):
         4_Sun___   Butt  _Cont__
         5_______   ____  _______
         """
-   
+    
     def toggle_theme(self):
         current_theme = ctk.get_appearance_mode()
         if current_theme == "Dark":
@@ -134,14 +167,23 @@ class HomePage(ctk.CTkFrame):
     def _build_header(self):
         header_frame = ctk.CTkFrame(self, height=40)
         header_frame.grid(row=0, column=0, columnspan=8, sticky="ew")
-        header_frame.grid_columnconfigure(0, weight=1) # Menu Button
-        header_frame.grid_columnconfigure(1, weight=1) # Light/Dark toggle, other settings?
+        header_frame.grid_columnconfigure(0, weight=1)  # Left (Menu)
+        header_frame.grid_columnconfigure(1, weight=0)  # Language dropdown
+        header_frame.grid_columnconfigure(2, weight=0)  # Theme button
 
         menu_button = ctk.CTkButton(header_frame, text="Menu", width=80, height=28) # left aligned 
         menu_button.grid(row=0, column=0, padx=10, sticky="w")
 
-        self.theme_button = ctk.CTkButton(header_frame, text="Dark Mode", command=self.toggle_theme) # command=self.-> add set_appearance_mode function to toggle variable
-        self.theme_button.grid(row=0, column=1, padx=10, sticky="e")
+        """ language selection dropdowon """
+        self.language_var = tk.StringVar(value=get_language())
+        language_menu = ctk.CTkOptionMenu(header_frame, values=["en", "es", "hi"],variable=self.language_var, command=self.on_language_change)
+        language_menu.grid(row=0, column=1, padx=(10,5), sticky="e")
+
+        self.theme_button = ctk.CTkButton(header_frame, text="Dark Mode", command=self.toggle_theme)
+        self.theme_button.grid(row=0, column=2, padx=10, sticky="e")
+        current_mode = ctk.get_appearance_mode()
+        self.theme_button.configure(text="Dark Mode" if current_mode == "Light" else "Light Mode")
+        self.controller.theme_buttons.append(self.theme_button)
 
 
         #  Parent Frame for Temp, Humidity, Wind, Precip, Description
@@ -351,14 +393,18 @@ class HomePage(ctk.CTkFrame):
             
     def update_weather(self, city):
         print(f"Updating weather for {city}")
-        data, error = self.weather_api.fetch_open_weather(city)
+        data, error = self.weather_api.fetch_open_weather(city, get_language())
 
         if error:
             print("Error:", error)
             return 
-        weather = WeatherProcessor.extract_weather_info(data)
+        processor = WeatherProcessor()
+        weather = processor.extract_weather_info(data)
         if weather:
             self.current_weather = weather
+            print(f"Language call from api {get_language()}")
+            # print("weather data keys", list(weather))
+            # print("weather data", weather)
             self.display_weather(weather)
             # save weather data to csv
             save_weather(weather)
@@ -401,28 +447,40 @@ class HomePage(ctk.CTkFrame):
 
     """ TODO troubleshoot this map a little but I think it is not good in tkinter or the map quality is low. replace with other map option or consider overlaying it with a google map or replacing the HomePage map display feature entirely. """
     def update_weather_map(self, layer_name=None):
-        if not self.current_weather:
+        if not self.current_weather or 'coordinates' not in self.current_weather:
+            self.map_label.configure(image="", text="Loading weather data...")
             return
+        try:
+                # Get coordinates from current weather
+            lat = self.current_weather['coordinates']['lat']
+            lon = self.current_weather['coordinates']['lon']
     
-        # Get coordinates from current weather
-        lat = self.current_weather['coordinates']['lat']
-        lon = self.current_weather['coordinates']['lon']
+            # Get selected layer
+            layer_key = self.map_layers[self.selected_layer.get()]
     
-        # Get selected layer
-        layer_key = self.map_layers[self.selected_layer.get()]
+            # Fetch map image
+            image, error = self.weather_api.fetch_weather_map(lat, lon, layer_key)
     
-        # Fetch map image
-        image, error = self.weather_api.fetch_weather_map(lat, lon, layer_key)
-    
-        if image and not error:
-        # Convert PIL image for tkinter
-            ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(400, 300))
-            self.map_label.configure(image=ctk_image, text="")
-        else:
-            self.map_label.configure(image="", text=f"Map Error: {error}")
+            if image and not error:
+            # Convert PIL image for tkinter
+                ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(400, 300))
+                self.map_label.configure(image=ctk_image, text="")
+            else:
+                self.map_label.configure(image="", text=f"Map Error: {error}")
+        
+        except KeyError as e:
+            print(f"KeyError in update_weather_map: {e}")
+        except Exception as e:
+            print(f"Unexpecteed error in update_weather_map: {e}")
+            self.map_label.configure(image="", text="Error loading map")
+
 
     def refresh_weather_map(self):
         self.update_weather_map()
+
+    def on_language_change(self, selected_lang):
+        self.controller.update_language(selected_lang)
+    
 
 
         """ connected to HomePage via button-> plt graphs or other graphics? """
@@ -433,10 +491,14 @@ class ForecastPage(ctk.CTkFrame):
 
         label = ctk.CTkLabel(self, text="Forecast Page")
         label.grid(row=0, column=0)
+        
+        
 
         """ Call builders """
         self._configure_grid()
         self._build_header()
+
+    
 
     """ TODO this is copied grid layout from HomePage and needs to be modified to the desired feature layout per page. Only used as boilerplate FramePage starter code. """
     def _configure_grid(self):
@@ -465,11 +527,15 @@ class ForecastPage(ctk.CTkFrame):
         menu_button = ctk.CTkButton(header_frame, text="<- Back", width=120, height=28, command=lambda: self.controller.show_frame(HomePage)) # left aligned 
         menu_button.grid(row=0, column=0, padx=10, sticky="w")
 
-        self.theme_switch = ctk.CTkSwitch(header_frame, text="Light Mode",)# command=self.-> add set_appearance_mode function to toggle variable
-        self.theme_switch.grid(row=0, column=1, padx=10, sticky="e")
-
-        pass
         
+        self.theme_button = ctk.CTkButton(header_frame,text="Dark Mode",command=self.controller.toggle_theme)
+        self.theme_button.grid(row=0, column=1, sticky="e", padx=10)
+
+        current_mode = ctk.get_appearance_mode()
+        self.theme_button.configure(text="Dark Mode" if current_mode == "Light" else "Light Mode")
+
+        # Register button with App for syncing text
+        self.controller.theme_buttons.append(self.theme_button)
 
         """ connected to HomePage via button-> This is for advanced feature and may be removed. Check on feature timeline. If required features not completed, remove TrendPage by 15/7/25 """
 class TrendPage(ctk.CTkFrame):
@@ -511,9 +577,15 @@ class TrendPage(ctk.CTkFrame):
         menu_button = ctk.CTkButton(header_frame, text="<- Back", width=120, height=28, command=lambda: self.controller.show_frame(HomePage)) # left aligned 
         menu_button.grid(row=0, column=0, padx=10, sticky="w")
 
-        self.theme_switch = ctk.CTkSwitch(header_frame, text="Light Mode",)# command=self.-> add set_appearance_mode function to toggle variable
-        self.theme_switch.grid(row=0, column=1, padx=10, sticky="e")
-    
+        
+        self.theme_button = ctk.CTkButton(header_frame,text="Dark Mode",command=self.controller.toggle_theme)
+        self.theme_button.grid(row=0, column=1, sticky="e", padx=10)
+
+        current_mode = ctk.get_appearance_mode()
+        self.theme_button.configure(text="Dark Mode" if current_mode == "Light" else "Light Mode")
+
+        # Register button with App for syncing text
+        self.controller.theme_buttons.append(self.theme_button)
         pass
         
 
@@ -557,9 +629,15 @@ class HistoricalPage(ctk.CTkFrame):
         menu_button = ctk.CTkButton(header_frame, text="<- Back", width=120, height=28, command=lambda: self.controller.show_frame(HomePage)) # left aligned 
         menu_button.grid(row=0, column=0, padx=10, sticky="w")
 
-        self.theme_switch = ctk.CTkSwitch(header_frame, text="Light Mode",)# command=self.-> add set_appearance_mode function to toggle variable
-        self.theme_switch.grid(row=0, column=1, padx=10, sticky="e")
-   
+        
+        self.theme_button = ctk.CTkButton(header_frame,text="Dark Mode",command=self.controller.toggle_theme)
+        self.theme_button.grid(row=0, column=1, sticky="e", padx=10)
+
+        current_mode = ctk.get_appearance_mode()
+        self.theme_button.configure(text="Dark Mode" if current_mode == "Light" else "Light Mode")
+
+        # Register button with App for syncing text
+        self.controller.theme_buttons.append(self.theme_button)
         pass
         
 
@@ -603,9 +681,15 @@ class FirePage(ctk.CTkFrame):
         menu_button = ctk.CTkButton(header_frame, text="<- Back", width=120, height=28, command=lambda: self.controller.show_frame(HomePage)) # left aligned 
         menu_button.grid(row=0, column=0, padx=10, sticky="w")
 
-        self.theme_switch = ctk.CTkSwitch(header_frame, text="Light Mode",)# command=self.-> add set_appearance_mode function to toggle variable
-        self.theme_switch.grid(row=0, column=1, padx=10, sticky="e")
+        
+        self.theme_button = ctk.CTkButton(header_frame,text="Dark Mode",command=self.controller.toggle_theme)
+        self.theme_button.grid(row=0, column=1, sticky="e", padx=10)
 
+        current_mode = ctk.get_appearance_mode()
+        self.theme_button.configure(text="Dark Mode" if current_mode == "Light" else "Light Mode")
+
+        # Register button with App for syncing text
+        self.controller.theme_buttons.append(self.theme_button)
         pass
 
 
@@ -615,3 +699,4 @@ class FirePage(ctk.CTkFrame):
     
 #     app = App()
 #     app.mainloop()
+
