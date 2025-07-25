@@ -38,7 +38,7 @@ class OpenWeatherAPI:
             response = requests.get(weather_url, params=params)
             if response.status_code == 200:
                 weather_json_data = response.json()
-                print(weather_json_data)
+                # print(weather_json_data)
                 return weather_json_data, None
             elif response.status_code == 401: 
                 return self.alternate_fetch_open_weather(select_city)

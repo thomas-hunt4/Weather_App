@@ -81,6 +81,23 @@ class WeatherProcessor:
     
         return locations
     
+    def extract_minimal_weather_info(self, weather_json):
+        """Extract minimal weather info for current weather (today's date)"""
+        if not weather_json:
+            return None
+    
+    # For current weather, we only have one temperature, so use it for all three
+        temp = weather_json['main']['temp']
+    
+        return {
+            'city': weather_json['name'],
+            'temp_max': round(temp, 2) if temp is not None else None,
+            'temp_min': round(temp, 2) if temp is not None else None,  # Same as current temp
+            'temp_mean': round(temp, 2) if temp is not None else None, # Same as current temp
+            'latitude': round(weather_json['coord']['lat'], 4),
+            'longitude': round(weather_json['coord']['lon'], 4)
+        }
+    
     """ Select location through user input for Weather and Geo request    """
     # @staticmethod
     def select_city():
