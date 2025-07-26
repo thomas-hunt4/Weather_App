@@ -96,3 +96,64 @@ class OpenMeteoAPI:
                 
         except Exception as e:
             return None, str(e)
+
+        """ Pulling in previous functions to return different API call and returns on secondary/non-vital page """
+    def meteo_forecast_and_trend(self,select_city):
+        # Setup the Open-Meteo API client with cache and retry on error
+        cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
+        retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
+        """ TODO unsure if this is needed where repeating a call or if the __init__ makes this accessible. """
+        # openmeteo = openmeteo_requests.Client(session = retry_session)
+
+        # Make sure all required weather variables are listed here
+        # The order of variables in hourly or daily is important to assign them correctly below
+        try:
+            lat, lon = self._get_coordinates(select_city)
+            if not lat or not lon:
+                return None, f"City {select_city} not found"
+            
+            return self.meteo_forecast_and_trend_data(lat,lon,select_city)
+        
+        except Exception as e:
+            return None, str(e)
+        
+    def meteo_forecast_and_trend_data(self, lat, lon,city_name):
+
+        try:
+            url = "https://api.open-meteo.com/v1/forecast"
+            params = {
+	            "latitude": lat,
+	            "longitude": lon,
+	            "daily": ["temperature_2m_max", "temperature_2m_min"],
+	            "past_days": 5
+            }
+            responses = self.openmeteo.weather_api(url, params=params)
+
+            # Process first location. Add a for-loop for multiple locations or weather models
+            response = responses[0]
+            print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
+            print(f"Elevation {response.Elevation()} m asl")
+            print(f"Timezone {response.Timezone()}{response.TimezoneAbbreviation()}")
+            print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
+
+            # Process daily data. The order of variables needs to be the same as requested.
+            daily = response.Daily()
+            daily_temperature_2m_max = daily.Variables(0).ValuesAsNumpy()
+            daily_temperature_2m_min = daily.Variables(1).ValuesAsNumpy()
+
+            daily_data = {"date": pd.date_range(
+	        start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
+	        end = pd.to_datetime(daily.TimeEnd(), unit = "s", utc = True),
+	        freq = pd.Timedelta(seconds = daily.Interval()),
+	        inclusive = "left"
+            )}
+
+            daily_data["temperature_2m_max"] = daily_temperature_2m_max
+            daily_data["temperature_2m_min"] = daily_temperature_2m_min
+
+            daily_dataframe = pd.DataFrame(data = daily_data)
+            print(daily_dataframe)
+
+            return daily_dataframe, None
+        except Exception as e:
+            return None, str(e)
