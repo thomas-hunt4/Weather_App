@@ -32,3 +32,7 @@ https://www.vecteezy.com/vector-art/57967153-moons-set-black-yellow
  
 ``` schedule ``` library for Most searched/Favorite cities historical data 
 https://schedule.readthedocs.io/en/stable/
+
+
+``` icons for trend display ```
+<a target="_blank" href="https://icons8.com/icon/7zlXzrTyT4H4/right-arrow">Arrow</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
