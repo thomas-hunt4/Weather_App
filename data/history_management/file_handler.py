@@ -35,7 +35,7 @@ def save_weather(weather_data, filepath="data/history_management/weather_history
             # write header
             if file_empty:
                 writer.writeheader()
-
+            
             row = {
                 "timestamp": weather_data.get('timestamp'),
                 "date": weather_data.get('date', 'N/A'),
