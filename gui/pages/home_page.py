@@ -10,6 +10,7 @@ from features.language_select import set_language, get_language
 from features.alerts import SMS_Alerts
 from data.api_handlers.send_sms import twilio_sms
 from .toplevel_window import ToplevelWindow
+from data.user_preferences.favorites_manager import FavoritesManager
 
 
 class HomePage(ctk.CTkFrame):
@@ -85,8 +86,24 @@ class HomePage(ctk.CTkFrame):
         header_frame.grid_columnconfigure(1, weight=0)  # Language dropdown
         header_frame.grid_columnconfigure(2, weight=0)  # Theme button
 
-        menu_button = ctk.CTkButton(header_frame, text="Menu", width=80, height=28) # left aligned 
-        menu_button.grid(row=0, column=0, padx=10, sticky="w")
+        menu_dropdown = ctk.CTkOptionMenu(
+        header_frame, 
+        values=["Manage Favorites", "Settings", "Help"],
+        width=120,
+        height=28,
+        command=self._handle_menu_selection
+    )
+        menu_dropdown.set("Menu")  # Default text shown
+        menu_dropdown.grid(row=0, column=0, padx=10, sticky="w")
+        self.menu_dropdown = ctk.CTkOptionMenu(
+        header_frame, 
+        values=["Manage Favorites", "Settings", "Help"],
+        width=120,
+        height=28,
+        command=self._handle_menu_selection
+    )
+        self.menu_dropdown.set("Menu")
+        self.menu_dropdown.grid(row=0, column=0, padx=10, sticky="w")
 
         """ language selection dropdown """
         self.language_var = tk.StringVar(value=get_language())
@@ -382,3 +399,80 @@ class HomePage(ctk.CTkFrame):
 
     def on_language_change(self, selected_lang):
         self.controller.update_language(selected_lang)
+
+    def _handle_menu_selection(self, choice):
+        """Handle menu dropdown selection"""
+        if choice == "Manage Favorites":
+            self._open_favorites_dialog()
+        elif choice == "Settings":
+            print("Settings selected")
+        elif choice == "Help":
+            print("Help selected")
+        
+        # Reset dropdown to show "Menu"
+        self.menu_dropdown.set("Menu")
+        
+        
+            
+    def _open_favorites_dialog(self):
+        """Open the favorites management dialog"""
+        # Close menu first
+        if hasattr(self, 'menu_window'):
+            self.menu_window.destroy()
+        
+        # Open favorites dialog
+        if hasattr(self, 'fav_window') and self.fav_window.winfo_exists():
+            return
+        
+        self.fav_window = ctk.CTkToplevel(self)
+        self.fav_window.title("Manage Favorites")
+        self.fav_window.geometry("300x200")
+        
+        # Make it stay on top and grab focus
+        self.fav_window.transient(self)
+        self.fav_window.lift()
+        self.fav_window.focus_force()
+        self.fav_window.grab_set()
+        
+        self.favorites_manager = FavoritesManager()
+        
+        # Add city entry
+        ctk.CTkLabel(self.fav_window, text="Add City:").pack(pady=5)
+        self.fav_entry = ctk.CTkEntry(self.fav_window, width=200)
+        self.fav_entry.pack(pady=5)
+        
+        ctk.CTkButton(self.fav_window, text="Add", command=self._add_favorite).pack(pady=5)
+        
+        # Show current favorites
+        ctk.CTkLabel(self.fav_window, text="Current Favorites:").pack(pady=(10,5))
+        self.fav_list_frame = ctk.CTkFrame(self.fav_window)
+        self.fav_list_frame.pack(pady=5, padx=20, fill="x")
+        
+        self._refresh_favorites()
+
+    def _add_favorite(self):
+        city = self.fav_entry.get()
+        success, msg = self.favorites_manager.add_favorite(city)
+        print(msg)  # Simple feedback for now
+        if success:
+            self.fav_entry.delete(0, 'end')
+            self._refresh_favorites()
+
+    def _refresh_favorites(self):
+        for widget in self.fav_list_frame.winfo_children():
+            widget.destroy()
+        
+        favorites = self.favorites_manager.get_favorites()
+        for city in favorites:
+            frame = ctk.CTkFrame(self.fav_list_frame)
+            frame.pack(fill="x", pady=2)
+            
+            ctk.CTkLabel(frame, text=city).pack(side="left", padx=10)
+            ctk.CTkButton(frame, text="X", width=30, 
+                        command=lambda c=city: self._remove_favorite(c)).pack(side="right", padx=5)
+
+    def _remove_favorite(self, city):
+        success, msg = self.favorites_manager.remove_favorite(city)
+        print(msg)  # Simple feedback for now
+        if success:
+            self._refresh_favorites()

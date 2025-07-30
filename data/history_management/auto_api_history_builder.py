@@ -46,7 +46,12 @@ class ForecastArchiveAutomation:
     
     """ TODO + GUI element that appends and returns list(limit=10) """
     def get_user_favorites(self):
-        return ["Cadiz", "Santa Marta", "La Paz"]
+        try:
+            from data.user_preferences.favorites_manager import FavoritesManager
+            favorites_manager = FavoritesManager()
+            return favorites_manager.get_favorites()
+        except:
+            return []
     
     """ Combine list """
     def get_cities_list(self):
