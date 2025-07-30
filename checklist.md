@@ -10,7 +10,7 @@
 [] Temperature Graph      
 [x] Theme Switcher   
 [x] Weather Alerts w/SMS   
-[] Trend Detection  
+[x] Trend Detection  
 [] Tomorrow's Guess   
 
 
