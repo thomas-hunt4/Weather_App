@@ -80,39 +80,7 @@ class OpenWeatherAPI:
         except Exception as e:
             return None, str(e)
 
-
-    # """ Convert lat/lon into Tile based format for map display """
-    """ TODO make a decision on whether or not to tie user input to fixed list of city options. If using fixed list then perhaps tie this conversion to the lat/lon data stored in that list. """
-    def deg2num(self, lat_deg, lon_deg, zoom):
-        lat_rad = math.radians(lat_deg)
-        n = 2.0 ** zoom
-        x = int((lon_deg + 180.0) / 360.0 * n)
-        y = int((1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n)
-        return (x, y)
-
-    def fetch_weather_map(self, lat, lon, layer="clouds_new", zoom=4):
-        try:
-            x, y = self.deg2num(lat, lon, zoom)
-            url = f"https://tile.openweathermap.org/map/{layer}/{zoom}/{x}/{y}.png?appid={weather_api_key}"
         
-            response = requests.get(url)
-            if response.status_code == 200:
-                image = Image.open(BytesIO(response.content))
-                return image, None
-            else:
-                return None, f"Failed to fetch weather map: {response.status_code}"
-        except Exception as e:
-            return None, str(e)
-        
-    def get_available_map_layers(self):
-        return {
-        "Clouds": "clouds_new",
-        "Precipitation": "precipitation_new", 
-        "Pressure": "pressure_new",
-        "Wind Speed": "wind_new",
-        "Temperature": "temp_new"
-    }
-
     def alternate_fetch_open_weather(self, select_city, language="en"):
         try: 
             params = {

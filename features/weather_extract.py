@@ -25,7 +25,9 @@ class WeatherProcessor:
         # Weather description
         weather_desc = weather_json['weather'][0]['description']
         weather_main = weather_json['weather'][0]['main']
-    
+
+        # Associated condition weather icon
+        weather_icon = weather_json['weather'][0]['icon']
         # Wind info
         wind_speed = weather_json['wind']['speed']
         wind_direction = weather_json['wind'].get('deg', 'N/A')
@@ -51,6 +53,7 @@ class WeatherProcessor:
             'pressure': pressure,
             'description': weather_desc,
             'main_weather': weather_main,
+            'weather_icon': weather_icon,
             'wind_speed': wind_speed,
             'wind_direction': wind_direction,
             'cloudiness': cloudiness,

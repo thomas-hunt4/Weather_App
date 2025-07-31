@@ -1,6 +1,9 @@
 import tkinter as tk
 import customtkinter as ctk
 from PIL import ImageTk
+import tkintermapview
+import requests
+import io
 
 # Link Data and Feature files for interactions
 from data.api_handlers.open_weather_api import OpenWeatherAPI
@@ -226,45 +229,77 @@ class HomePage(ctk.CTkFrame):
         weather_alerts_button.grid(row=4, padx=5, pady=10, sticky="ew")
 
     def _build_map_frame(self):
-        map_frame = ctk.CTkFrame(self,corner_radius=15)
+        map_frame = ctk.CTkFrame(self, corner_radius=15)
         map_frame.grid(row=1, column=4, columnspan=4, rowspan=3, padx=20, pady=20, sticky="nsew")
-
-        for row in range(5):
-            map_frame.grid_rowconfigure(row, weight=1)
-
+        
+        # Configure grid
+        map_frame.grid_rowconfigure(1, weight=1)
         map_frame.grid_columnconfigure(0, weight=1)
-
-        # Map layer selection
-        layer_frame = ctk.CTkFrame(map_frame)
-        layer_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
-    
-        # Get available layers from API
-        self.map_layers = self.weather_api.get_available_map_layers()
-        self.selected_layer = tk.StringVar(value="Clouds")
-    
-        layer_label = ctk.CTkLabel(layer_frame, text="Map Layer:")
-        layer_label.grid(row=0, column=0, padx=5)
-    
-        layer_menu = ctk.CTkOptionMenu(layer_frame, 
-                                   values=list(self.map_layers.keys()),
-                                   variable=self.selected_layer,
-                                   command=self.update_weather_map)
-        layer_menu.grid(row=0, column=1, padx=5)
-
-        # Map display label
-        self.map_label = ctk.CTkLabel(map_frame, text="Weather Map will appear here")
-        self.map_label.grid(row=1, column=0, rowspan=3, sticky="nsew", padx=10, pady=10)
-
-        # Refresh button
-        refresh_button = ctk.CTkButton(map_frame, text="Refresh Map", command=self.refresh_weather_map)
-        refresh_button.grid(row=4, column=0, pady=5)
+        
+        # Title
+        map_title = ctk.CTkLabel(map_frame, text="Location Map", font=ctk.CTkFont(size=14, weight="bold"))
+        map_title.grid(row=0, column=0, pady=(10, 5))
+        
+        # Create the map widget - no default position, will be set by weather loading
+        self.map_widget = tkintermapview.TkinterMapView(
+            map_frame, 
+            width=400, 
+            height=300, 
+            corner_radius=10
+        )
+        self.map_widget.grid(row=1, column=0, padx=10, pady=(5, 10), sticky="nsew")
 
     def _build_sun_frame(self):
-        sun_frame = ctk.CTkFrame(self,corner_radius=15)
+        sun_frame = ctk.CTkFrame(self, corner_radius=15)
         sun_frame.grid(row=4, column=0, columnspan=3, rowspan=2, padx=20, pady=20, sticky="nsew")
 
-        for row in range(2):
-            sun_frame.grid_rowconfigure(row, weight=1)
+        # Configure grid for overlay layout
+        sun_frame.grid_rowconfigure(0, weight=1)
+        sun_frame.grid_columnconfigure(0, weight=1)
+
+        # Background label for weather icon (will be set when weather loads)
+        self.sun_background_label = ctk.CTkLabel(sun_frame, text="")
+        self.sun_background_label.grid(row=0, column=0, sticky="nsew")
+
+        # Content frame for text overlay (transparent background)
+        content_frame = ctk.CTkFrame(sun_frame, fg_color="transparent")
+        content_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
+        
+        # Configure content frame grid
+        content_frame.grid_rowconfigure(0, weight=0)  # Title
+        content_frame.grid_rowconfigure(1, weight=1)  # Sunrise
+        content_frame.grid_rowconfigure(2, weight=1)  # Sunset
+        content_frame.grid_columnconfigure(0, weight=1)
+
+        # Title with semi-transparent background
+        sun_title = ctk.CTkLabel(
+            content_frame, 
+            text="Sun Times", 
+            font=ctk.CTkFont(size=16, weight="bold"),
+             fg_color=("white", "gray10"),
+            corner_radius=8
+        )
+        sun_title.grid(row=0, column=0, pady=(5, 10), padx=20, sticky="ew")
+
+        # Sunrise with semi-transparent background
+        sunrise_frame = ctk.CTkFrame(content_frame, fg_color=("white", "gray10"), corner_radius=8)
+        sunrise_frame.grid(row=1, column=0, pady=5, padx=20, sticky="ew")
+        
+        sunrise_label = ctk.CTkLabel(sunrise_frame, text="🌅 Sunrise", font=ctk.CTkFont(size=12, weight="bold"))
+        sunrise_label.grid(row=0, column=0, pady=(5, 0), padx=10)
+        
+        self.sunrise_time = ctk.CTkLabel(sunrise_frame, text="--:--", font=ctk.CTkFont(size=16))
+        self.sunrise_time.grid(row=1, column=0, pady=(0, 5), padx=10)
+
+        # Sunset with semi-transparent background
+        sunset_frame = ctk.CTkFrame(content_frame, fg_color=("white", "gray10"), corner_radius=8)
+        sunset_frame.grid(row=2, column=0, pady=5, padx=20, sticky="ew")
+        
+        sunset_label = ctk.CTkLabel(sunset_frame, text="🌇 Sunset", font=ctk.CTkFont(size=12, weight="bold"))
+        sunset_label.grid(row=0, column=0, pady=(5, 0), padx=10)
+        
+        self.sunset_time = ctk.CTkLabel(sunset_frame, text="--:--", font=ctk.CTkFont(size=16))
+        self.sunset_time.grid(row=1, column=0, pady=(0, 5), padx=10)
 
     def _build_panic_button_frame(self):
         panic_frame = ctk.CTkFrame(self,corner_radius=15)
@@ -359,43 +394,41 @@ class HomePage(ctk.CTkFrame):
         self.humidity_value.configure(text=f"{weather['humidity']}%")
         self.wind_value.configure(text=f"{weather['wind_speed']} m/s") 
 
-        """ TODO Update sunrise and sunset frame """
-        # self.sunrise_label.configure(text=f"Sunrise: {weather['sunrise']}")
-        # self.sunset_label.configure(text=f"Sunset: {weather['sunset']}")  
+       # Update sunrise and sunset times
+        self.sunrise_time.configure(text=weather['sunrise'])
+        self.sunset_time.configure(text=weather['sunset'])
+
+        # Update weather icon background
+        self.update_sun_widget_background(weather.get('weather_icon', '01d'))
 
         self.update_weather_map()
 
     """ TODO troubleshoot this map a little but I think it is not good in tkinter or the map quality is low. replace with other map option or consider overlaying it with a google map or replacing the HomePage map display feature entirely. """
-    def update_weather_map(self, layer_name=None):
-        if not self.current_weather or 'coordinates' not in self.current_weather:
-            self.map_label.configure(image="", text="Loading weather data...")
+    def update_weather_map(self):
+        """Update map position based on current weather location"""
+        if not self.current_weather:
             return
-        try:
-                # Get coordinates from current weather
-            lat = self.current_weather['coordinates']['lat']
-            lon = self.current_weather['coordinates']['lon']
-    
-            # Get selected layer
-            layer_key = self.map_layers[self.selected_layer.get()]
-    
-            # Fetch map image
-            image, error = self.weather_api.fetch_weather_map(lat, lon, layer_key)
-    
-            if image and not error:
-            # Convert PIL image for tkinter
-                ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(400, 300))
-                self.map_label.configure(image=ctk_image, text="")
-            else:
-                self.map_label.configure(image="", text=f"Map Error: {error}")
         
-        except KeyError as e:
-            print(f"KeyError in update_weather_map: {e}")
+        try:
+            # Get coordinates from current weather
+            coords = self.current_weather.get('coordinates', {})
+            lat = coords.get('lat')
+            lon = coords.get('lon')
+            
+            if lat and lon:
+                # Set map position to the weather location
+                self.map_widget.set_position(lat, lon)
+                self.map_widget.set_zoom(12)
+                
+                # Add a marker for the city
+                city_name = self.current_weather.get('city', 'Current Location')
+                self.map_widget.delete_all_marker()  # Clear previous markers
+                self.map_widget.set_marker(lat, lon, text=city_name)
+                
         except Exception as e:
-            print(f"Unexpecteed error in update_weather_map: {e}")
-            self.map_label.configure(image="", text="Error loading map")
+            print(f"Error updating map: {e}")
 
-    def refresh_weather_map(self):
-        self.update_weather_map()
+
 
     def on_language_change(self, selected_lang):
         self.controller.update_language(selected_lang)
@@ -476,3 +509,48 @@ class HomePage(ctk.CTkFrame):
         print(msg)  # Simple feedback for now
         if success:
             self._refresh_favorites()
+
+    def update_sun_widget_background(self, icon_code):
+        """Update the weather icon background for the entire sun widget"""
+        try:
+            # Download weather icon from OpenWeatherMap
+            icon_url = f"https://openweathermap.org/img/wn/{icon_code}@4x.png"
+            response = requests.get(icon_url)
+            
+            if response.status_code == 200:
+                from PIL import Image
+                
+                # Open and resize the image to fit the widget
+                icon_image = Image.open(io.BytesIO(response.content))
+                
+                # Get the widget size and resize icon to fill it
+                widget_width = 400  # Increased size
+                widget_height = 200  # Increased size
+                
+                # Resize image to cover the widget area
+                icon_image = icon_image.resize((widget_width, widget_height), Image.Resampling.LANCZOS)
+                
+                # Make it more visible by reducing transparency less
+                icon_image = icon_image.convert("RGBA")
+                # Reduce opacity to 80% instead of 60% for better visibility
+                alpha = icon_image.split()[3]
+                alpha = alpha.point(lambda p: int(p * 0.8))
+                icon_image.putalpha(alpha)
+                
+                # Convert to CTkImage with the actual size
+                icon_ctk_image = ctk.CTkImage(
+                    light_image=icon_image, 
+                    dark_image=icon_image, 
+                    size=(widget_width, widget_height)
+                )
+                
+                # Set as background
+                self.sun_background_label.configure(image=icon_ctk_image, text="")
+                
+                # Keep a reference to prevent garbage collection
+                self.sun_background_label.image = icon_ctk_image
+                
+                print(f"Weather icon background updated successfully with icon: {icon_code}")
+                
+        except Exception as e:
+            print(f"Error loading weather icon background: {e}")
