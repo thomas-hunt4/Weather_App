@@ -2,7 +2,8 @@ import customtkinter as ctk
 
 # Import page classes from the pages module
 from .pages import HomePage, ForecastPage, TrendPage, HistoricalPage, FirePage
-
+# Weather quiz feature for group project 
+from features.weather_quiz import WeatherQuiz
 # Link Data and Feature files for interactions  
 from features.language_select import set_language, get_language
 

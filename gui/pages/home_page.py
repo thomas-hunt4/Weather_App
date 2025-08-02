@@ -309,11 +309,62 @@ class HomePage(ctk.CTkFrame):
             panic_frame.grid_rowconfigure(row, weight=1)
        
     def _build_weather_control_frame(self):
-        weather_control_frame = ctk.CTkFrame(self,corner_radius=15)
+        weather_control_frame = ctk.CTkFrame(self, corner_radius=15)
         weather_control_frame.grid(row=4, column=4, columnspan=4, rowspan=2, padx=20, pady=20, sticky="nsew")
 
-        for row in range(2):
-            weather_control_frame.grid_rowconfigure(row, weight=1)
+        # Configure grid
+        weather_control_frame.grid_rowconfigure(0, weight=0)  # Title
+        weather_control_frame.grid_rowconfigure(1, weight=1)  # Question area
+        weather_control_frame.grid_rowconfigure(2, weight=0)  # Buttons
+        weather_control_frame.grid_rowconfigure(3, weight=0)  # Score
+        weather_control_frame.grid_columnconfigure(0, weight=1)
+
+        # Initialize quiz
+        self.weather_quiz = WeatherQuiz()
+
+        # Title
+        quiz_title = ctk.CTkLabel(weather_control_frame, text="🌤️ Weather Quiz", font=ctk.CTkFont(size=16, weight="bold"))
+        quiz_title.grid(row=0, column=0, pady=(10, 5), sticky="ew")
+
+        # Question display area
+        question_frame = ctk.CTkFrame(weather_control_frame)
+        question_frame.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
+        question_frame.grid_rowconfigure(0, weight=0)  # Question text
+        question_frame.grid_rowconfigure(1, weight=1)  # Answer buttons
+        question_frame.grid_columnconfigure(0, weight=1)
+
+        # Question text
+        self.question_label = ctk.CTkLabel(
+            question_frame, 
+            text="Click 'New Question' to start the quiz!", 
+            font=ctk.CTkFont(size=12),
+            wraplength=350
+        )
+        self.question_label.grid(row=0, column=0, pady=(10, 5), padx=10, sticky="ew")
+
+        # Answer buttons frame
+        self.answers_frame = ctk.CTkFrame(question_frame, fg_color="transparent")
+        self.answers_frame.grid(row=1, column=0, pady=(5, 10), padx=10, sticky="nsew")
+        self.answers_frame.grid_columnconfigure(0, weight=1)
+
+        # Control buttons
+        button_frame = ctk.CTkFrame(weather_control_frame, fg_color="transparent")
+        button_frame.grid(row=2, column=0, pady=5, sticky="ew")
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+
+        self.new_question_btn = ctk.CTkButton(button_frame, text="New Question", command=self.load_new_question)
+        self.new_question_btn.grid(row=0, column=0, padx=(10, 5), pady=5, sticky="ew")
+
+        self.reset_quiz_btn = ctk.CTkButton(button_frame, text="Reset Quiz", command=self.reset_quiz)
+        self.reset_quiz_btn.grid(row=0, column=1, padx=(5, 10), pady=5, sticky="ew")
+
+        # Score display
+        self.score_label = ctk.CTkLabel(weather_control_frame, text="Score: 0/0 (0%)", font=ctk.CTkFont(size=12))
+        self.score_label.grid(row=3, column=0, pady=(5, 10))
+
+        # Store answer buttons for later reference
+        self.answer_buttons = []
 
     """ Load to populate display at start up by IP look up"""
     def load_default_weather(self):
