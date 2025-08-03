@@ -1,0 +1,23 @@
+[
+  {
+    "name": "John Doe",
+    "phone": "+15551234567",
+    "city": "New York",
+    "registered_date": "2025-08-03 21:06:36",
+    "active": true
+  },
+  {
+    "name": "Jane Smith",
+    "phone": "+15559876543",
+    "city": "Los Angeles",
+    "registered_date": "2025-08-03 21:06:36",
+    "active": true
+  },
+  {
+    "name": "Alice Brown",
+    "phone": "+15554445555",
+    "city": "Miami",
+    "registered_date": "2025-08-03 21:06:36",
+    "active": true
+  }
+]

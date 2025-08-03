@@ -4,6 +4,7 @@ from PIL import ImageTk
 import tkintermapview
 import requests
 import io
+import random
 
 # Link Data and Feature files for interactions
 from data.api_handlers.open_weather_api import OpenWeatherAPI
@@ -14,6 +15,8 @@ from features.alerts import SMS_Alerts
 from data.api_handlers.send_sms import twilio_sms
 from .toplevel_window import ToplevelWindow
 from data.user_preferences.favorites_manager import FavoritesManager
+from .weather_alerts_window import WeatherAlertsWindow
+from features.weather_quiz import WeatherQuiz
 
 
 class HomePage(ctk.CTkFrame):
@@ -89,22 +92,14 @@ class HomePage(ctk.CTkFrame):
         header_frame.grid_columnconfigure(1, weight=0)  # Language dropdown
         header_frame.grid_columnconfigure(2, weight=0)  # Theme button
 
-        menu_dropdown = ctk.CTkOptionMenu(
-        header_frame, 
-        values=["Manage Favorites", "Settings", "Help"],
-        width=120,
-        height=28,
-        command=self._handle_menu_selection
-    )
-        menu_dropdown.set("Menu")  # Default text shown
-        menu_dropdown.grid(row=0, column=0, padx=10, sticky="w")
+        # Menu dropdown - FIXED: removed duplicate
         self.menu_dropdown = ctk.CTkOptionMenu(
-        header_frame, 
-        values=["Manage Favorites", "Settings", "Help"],
-        width=120,
-        height=28,
-        command=self._handle_menu_selection
-    )
+            header_frame, 
+            values=["Manage Favorites", "Settings", "Help"],
+            width=120,
+            height=28,
+            command=self._handle_menu_selection
+        )
         self.menu_dropdown.set("Menu")
         self.menu_dropdown.grid(row=0, column=0, padx=10, sticky="w")
 
@@ -186,24 +181,29 @@ class HomePage(ctk.CTkFrame):
 
     # Features Frame -> Search bar and buttons to activate Features
     def _build_features_frame(self):
-        features_frame = ctk.CTkFrame(self,corner_radius=15)
+        """Weather search, navigation, and control buttons"""
+        features_frame = ctk.CTkFrame(self, corner_radius=15)
         features_frame.grid(row=1, column=3, columnspan=1, rowspan=3, padx=20, pady=20, sticky="nsew")
         
-        for row in range(5):
+        for row in range(7):  # 7 rows for all buttons including test button
             features_frame.grid_rowconfigure(row, weight=1)
-
         features_frame.grid_columnconfigure(0, weight=1)
 
-        """ testing data"""
-        """ testing API and data """
-        test_button = ctk.CTkButton(features_frame, text="Test Trend Data", command=self.test_trend_processor)
-        test_button.grid(row=5, padx=5, pady=10, sticky="ew")  # Adjust row number as needed
+        # Favorites dropdown (clean, simple selector)
+        self.favorites_manager = FavoritesManager()
+        self.favorites_var = ctk.StringVar(value="Select Favorite")
+        self.favorites_dropdown = ctk.CTkOptionMenu(
+            features_frame,
+            variable=self.favorites_var,
+            values=["Select Favorite"] + self.favorites_manager.get_favorites(),
+            command=self._on_favorite_selected,
+            width=200
+        )
+        self.favorites_dropdown.grid(row=0, column=0, padx=5, pady=10, sticky="ew")
 
-        """ collect desire city from user-> TODO: pass to API/Data for retrieval. Set a default or us IP on start up to display current location at WeatherApp load time """
-        # select_city
-        city_entry = ctk.CTkEntry(features_frame, placeholder_text="Select City", corner_radius=15,)
-        city_entry.grid(row=0, column=0, padx=5, pady=10, sticky="ew")
-
+        # City entry
+        city_entry = ctk.CTkEntry(features_frame, placeholder_text="Select City", corner_radius=15)
+        city_entry.grid(row=1, column=0, padx=5, pady=10, sticky="ew")
         city_entry.bind("<Return>", lambda event: self.update_weather(city_entry.get()))
 
         # Import here to avoid circular imports
@@ -212,21 +212,36 @@ class HomePage(ctk.CTkFrame):
         from .historical_page import HistoricalPage
 
         # Nav to forecast page
-        forecast_button = ctk.CTkButton(features_frame, text="Forecast", corner_radius=15, command=lambda: self.controller.show_frame(ForecastPage))
-        forecast_button.grid(row=1, padx=5, pady=10, sticky="ew")
+        forecast_button = ctk.CTkButton(features_frame, text="Forecast", corner_radius=15, 
+                                        command=lambda: self.controller.show_frame(ForecastPage))
+        forecast_button.grid(row=2, column=0, padx=5, pady=10, sticky="ew")
 
-         # Nav to Trend page
-        trend_button = ctk.CTkButton(features_frame, text="Trending Temperature", corner_radius=15, command=lambda: self.controller.show_frame(TrendPage))
-        trend_button.grid(row=2, padx=5, pady=10, sticky="ew")
+        # Nav to Trend page
+        trend_button = ctk.CTkButton(features_frame, text="Trending Temperature", corner_radius=15, 
+                                     command=lambda: self.controller.show_frame(TrendPage))
+        trend_button.grid(row=3, column=0, padx=5, pady=10, sticky="ew")
 
         # Nav to Historical page
-        historical_button = ctk.CTkButton(features_frame, text="Historical Data", corner_radius=15, command=lambda: self.controller.show_frame(HistoricalPage))
-        historical_button.grid(row=3, padx=5, pady=10, sticky="ew")
+        historical_button = ctk.CTkButton(features_frame, text="Historical Data", corner_radius=15, 
+                                          command=lambda: self.controller.show_frame(HistoricalPage))
+        historical_button.grid(row=4, column=0, padx=5, pady=10, sticky="ew")
 
-        # Weather Alerts TODO toplevel-> user phone/email for Alerts
-        """ TODO Correct widget is not TopLevel, it is CTkInputDialog """
-        weather_alerts_button = ctk.CTkButton(features_frame, text="Weather Alerts!!", corner_radius=15, command=lambda: self.controller.show_frame())
-        weather_alerts_button.grid(row=4, padx=5, pady=10, sticky="ew")
+        # Weather Alerts Registration Button
+        weather_alerts_button = ctk.CTkButton(
+            features_frame, 
+            text="⚠️ Weather Alerts", 
+            corner_radius=15,
+            command=self._open_weather_alerts_window,
+            fg_color="#ff6b6b",
+            hover_color="#ff5252"
+        )
+        weather_alerts_button.grid(row=5, column=0, padx=5, pady=10, sticky="ew")
+
+        # Test button (keep if you want it)
+        test_button = ctk.CTkButton(features_frame, text="Test Trend Data", command=self.test_trend_processor)
+        test_button.grid(row=6, column=0, padx=5, pady=10, sticky="ew")
+
+        self.city_entry = city_entry
 
     def _build_map_frame(self):
         map_frame = ctk.CTkFrame(self, corner_radius=15)
@@ -319,8 +334,13 @@ class HomePage(ctk.CTkFrame):
         weather_control_frame.grid_rowconfigure(3, weight=0)  # Score
         weather_control_frame.grid_columnconfigure(0, weight=1)
 
-        # Initialize quiz
-        self.weather_quiz = WeatherQuiz()
+        # Initialize quiz with error handling
+        try:
+            self.weather_quiz = WeatherQuiz()
+            print("Weather quiz initialized successfully")
+        except Exception as e:
+            print(f"Error initializing weather quiz: {e}")
+            self.weather_quiz = None
 
         # Title
         quiz_title = ctk.CTkLabel(weather_control_frame, text="🌤️ Weather Quiz", font=ctk.CTkFont(size=16, weight="bold"))
@@ -366,8 +386,41 @@ class HomePage(ctk.CTkFrame):
         # Store answer buttons for later reference
         self.answer_buttons = []
 
-    """ Load to populate display at start up by IP look up"""
+    # Weather Alerts methods
+    def _open_weather_alerts_window(self):
+        """Open the Weather Alerts registration window"""
+        if hasattr(self, 'alerts_window') and self.alerts_window.winfo_exists():
+            self.alerts_window.focus()
+        else:
+            self.alerts_window = WeatherAlertsWindow(self)
+            self.alerts_window.focus()
+
+    def _on_favorite_selected(self, selection):
+        """Handle favorite city selection"""
+        if selection != "Select Favorite":
+            self.update_weather(selection)
+            # Update the city entry to show selected favorite
+            if hasattr(self, 'city_entry'):
+                self.city_entry.delete(0, 'end')
+                self.city_entry.insert(0, selection)
+
+    def _send_alert_to_registered_users(self, alert):
+        """Send weather alerts to all registered users"""
+        try:
+            from data.user_preferences.user_registration_manager import UserRegistrationManager
+            user_manager = UserRegistrationManager()
+            active_users = user_manager.get_active_users()
+            
+            if active_users:
+                from data.api_handlers.send_sms import twilio_sms
+                twilio_sms(alert)
+                print(f"Weather alert sent to {len(active_users)} registered user(s)")
+        except Exception as e:
+            print(f"Error sending alerts to registered users: {e}")
+
+    # Default weather loading
     def load_default_weather(self):
+        """Load to populate display at start up by IP look up"""
         location, error = self.weather_api.get_location_by_ip()
         if location:
             print(f"{location} detected")
@@ -376,14 +429,12 @@ class HomePage(ctk.CTkFrame):
             print(f"Could not detect {error}")
             self.update_weather("Lebrija")
 
-    """ Search Entry bar handling """
+    # Search Entry bar handling
     def search_weather(self):
         city = self.city_entry.get().strip()
         if city:
             self.update_weather(city)
             self.city_entry.delete(0, 'end')
-
-    """ TODO revisit for thorough testing, including special characters and location, regional, or linguistic variance. Follow up with through dependencies in Features Frame -> city_entry """
     
     def top_level_weather_alert(self, alert):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
@@ -412,8 +463,6 @@ class HomePage(ctk.CTkFrame):
         if weather:
             self.current_weather = weather
             print(f"Language call from api {get_language()}")
-            # print("weather data keys", list(weather))
-            # print("weather data", weather)
             self.display_weather(weather)
             # save weather data to csv
             save_weather(weather)
@@ -421,14 +470,14 @@ class HomePage(ctk.CTkFrame):
             alertsms = SMS_Alerts()
             alert = alertsms.weather_alerts(data)
             if alert:
-                twilio_sms(alert)
-                self.top_level_weather_alert(alert) # checks alerts.py criteria on all searchs and on load
+                # Send SMS to registered users instead of hardcoded number
+                self._send_alert_to_registered_users(alert)
+                self.top_level_weather_alert(alert)
         else:
             print("Failed to fetch weather data")
 
-    """ change this name to better associate with it dependants """
-    """ TODO Add function to change metric/imperial string units """
     def display_weather(self, weather):
+        """change this name to better associate with it dependants"""
         if not weather:
             return
 
@@ -454,7 +503,6 @@ class HomePage(ctk.CTkFrame):
 
         self.update_weather_map()
 
-    """ TODO troubleshoot this map a little but I think it is not good in tkinter or the map quality is low. replace with other map option or consider overlaying it with a google map or replacing the HomePage map display feature entirely. """
     def update_weather_map(self):
         """Update map position based on current weather location"""
         if not self.current_weather:
@@ -479,8 +527,6 @@ class HomePage(ctk.CTkFrame):
         except Exception as e:
             print(f"Error updating map: {e}")
 
-
-
     def on_language_change(self, selected_lang):
         self.controller.update_language(selected_lang)
 
@@ -495,8 +541,6 @@ class HomePage(ctk.CTkFrame):
         
         # Reset dropdown to show "Menu"
         self.menu_dropdown.set("Menu")
-        
-        
             
     def _open_favorites_dialog(self):
         """Open the favorites management dialog"""
@@ -605,3 +649,142 @@ class HomePage(ctk.CTkFrame):
                 
         except Exception as e:
             print(f"Error loading weather icon background: {e}")
+
+    # Quiz-related methods
+    def load_new_question(self):
+        """Load a new quiz question"""
+        if not self.weather_quiz:
+            self.question_label.configure(text="Quiz not available - check CSV files")
+            return
+        
+        # Check if current set is completed
+        if hasattr(self.weather_quiz, 'set_completed') and self.weather_quiz.set_completed:
+            set_info = self.weather_quiz.get_current_set_info()
+            score, percentage = self.weather_quiz.get_score()
+            
+            # Show set completion message
+            completion_text = f"🎉 Set {set_info['set_number']} Complete!\n"
+            completion_text += f"({set_info['set_name']})\n"
+            completion_text += f"Score: {score}/{self.weather_quiz.total_questions} ({percentage:.1f}%)"
+            
+            self.question_label.configure(text=completion_text)
+            
+            # Clear answer buttons
+            for button in self.answer_buttons:
+                button.destroy()
+            self.answer_buttons = []
+            
+            # Reset button text
+            self.new_question_btn.configure(text="New Question")
+            
+            # Change button text to start next set
+            next_set_num = self.weather_quiz.start_next_set()
+            if next_set_num <= 3:
+                self.new_question_btn.configure(text=f"Start Set {next_set_num}")
+            else:
+                # All sets completed
+                self.new_question_btn.configure(text="Quiz Complete!")
+            return
+        
+        try:
+            question = self.weather_quiz.generate_question()
+            if not question:
+                # Set completed
+                set_info = self.weather_quiz.get_current_set_info()
+                score, percentage = self.weather_quiz.get_score()
+                
+                completion_text = f"🎉 Set {set_info['set_number']} Complete!\n"
+                completion_text += f"({set_info['set_name']})\n"
+                completion_text += f"Score: {score}/{self.weather_quiz.total_questions} ({percentage:.1f}%)"
+                
+                self.question_label.configure(text=completion_text)
+                
+                # Clear answer buttons
+                for button in self.answer_buttons:
+                    button.destroy()
+                self.answer_buttons = []
+                
+                # Prepare for next set
+                next_set_num = self.weather_quiz.start_next_set()
+                if next_set_num <= 3:
+                    self.new_question_btn.configure(text=f"Start Set {next_set_num}")
+                else:
+                    self.new_question_btn.configure(text="All Sets Complete!")
+                return
+            
+            # Reset button text for normal questions
+            self.new_question_btn.configure(text="New Question")
+            
+            # Update question text
+            self.question_label.configure(text=question['question'])
+            
+            # Clear previous answer buttons
+            for button in self.answer_buttons:
+                button.destroy()
+            self.answer_buttons = []
+            
+            # Create answer options
+            all_answers = [question['correct_answer']] + question['wrong_answers']
+            random.shuffle(all_answers)
+            
+            for i, answer in enumerate(all_answers):
+                btn = ctk.CTkButton(
+                    self.answers_frame, 
+                    text=answer,
+                    command=lambda a=answer: self.check_quiz_answer(a)
+                )
+                btn.grid(row=i, column=0, pady=2, padx=5, sticky="ew")
+                self.answer_buttons.append(btn)
+                
+        except Exception as e:
+            print(f"Error loading question: {e}")
+            self.question_label.configure(text="Error loading question")
+
+    def check_quiz_answer(self, user_answer):
+        """Check the user's answer, show feedback, and automatically advance to next question"""
+        if not self.weather_quiz:
+            return
+            
+        try:
+            is_correct = self.weather_quiz.check_answer(user_answer)
+            
+            # Update score display
+            score, percentage = self.weather_quiz.get_score()
+            self.score_label.configure(text=f"Score: {score}/{self.weather_quiz.total_questions} ({percentage:.1f}%)")
+            
+            # Provide feedback
+            correct_answer = self.weather_quiz.current_question['correct_answer']
+            if is_correct:
+                feedback = f"✅ Correct! The answer is {correct_answer}"
+            else:
+                feedback = f"❌ Incorrect. The correct answer is {correct_answer}"
+            
+            # Show feedback briefly
+            self.question_label.configure(text=feedback)
+            
+            # Disable answer buttons temporarily
+            for button in self.answer_buttons:
+                button.configure(state="disabled")
+            
+            # Automatically advance to next question after 2 seconds
+            self.after(2000, self._advance_to_next_question)
+            
+        except Exception as e:
+            print(f"Error checking answer: {e}")
+
+    def _advance_to_next_question(self):
+        """Automatically advance to the next question after feedback"""
+        # Load the next question (this automatically advances the quiz state)
+        self.load_new_question()
+
+    def reset_quiz(self):
+        """Reset quiz score and stats"""
+        if self.weather_quiz:
+            self.weather_quiz.reset_quiz()
+            self.score_label.configure(text="Score: 0/0 (0%)")
+            self.question_label.configure(text="Click 'New Question' to start the quiz!")
+            
+            # Clear answer buttons
+            for button in self.answer_buttons:
+                button.destroy()
+            self.answer_buttons = []

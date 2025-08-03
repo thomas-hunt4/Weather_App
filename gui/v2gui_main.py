@@ -2,8 +2,7 @@ import customtkinter as ctk
 
 # Import page classes from the pages module
 from .pages import HomePage, ForecastPage, TrendPage, HistoricalPage, FirePage
-# Weather quiz feature for group project 
-from features.weather_quiz import WeatherQuiz
+
 # Link Data and Feature files for interactions  
 from features.language_select import set_language, get_language
 
@@ -17,7 +16,7 @@ ctk.set_default_color_theme("blue")
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("1200x800")
+        self.geometry("1200x1000")
         self.title("Weather Wonderland")
         self.resizable(True, True)
 
