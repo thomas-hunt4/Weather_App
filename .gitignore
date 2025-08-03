@@ -1,2 +1,5 @@
 venv/
 .env
+# User data - private information
+data/user_preferences/alert_users.json
+data/user_preferences/users_backup_*.json

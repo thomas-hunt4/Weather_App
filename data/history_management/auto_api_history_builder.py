@@ -98,7 +98,7 @@ class ForecastArchiveAutomation:
             'latitude': round(weather_json['coord']['lat'], 4),
             'longitude': round(weather_json['coord']['lon'], 4)
         }
-    # time.sleep()
+
     def populate_history(self):
         today = datetime.today().date()
         last_date = self.get_last_recorded_date()
@@ -128,14 +128,14 @@ class ForecastArchiveAutomation:
                         # Use Open-Meteo for historical data
                         weather_response, error = self.historical_api.fetch_historical_weather(city, target_date)
                         if not weather_response or error:
-                            print(f"Failed to get weather data for {city} on        {target_date}. Error: {error}")
+                            print(f"Failed to get weather data for {city} on {target_date}. Error: {error}")
                             continue
                 
                         # Use custom extraction for historical data
                         processed = self._extract_minimal_weather_info(weather_response)
                 
                     else:
-                    # Use OpenWeather for current data
+                        # Use OpenWeather for current data
                         weather_response, error = self.weather_api.fetch_open_weather(city)
                         if not weather_response or error:
                             print(f"Failed to get weather data for {city} on {target_date}. Error: {error}")
@@ -148,7 +148,7 @@ class ForecastArchiveAutomation:
                         print(f"Failed to process weather data for {city} on {target_date}")
                         continue
 
-                     # Add the date
+                    # Add the date
                     processed['date'] = target_date.strftime("%Y-%m-%d")
             
                     # Save to historical file
@@ -170,6 +170,7 @@ class ForecastArchiveAutomation:
     def run_once(self):
         self.populate_history()
 
+
 def main():
     scheduler = ForecastArchiveAutomation()
 
@@ -184,10 +185,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-    
-
-
