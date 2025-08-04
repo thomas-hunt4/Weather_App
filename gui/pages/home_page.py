@@ -52,11 +52,7 @@ class HomePage(ctk.CTkFrame):
         """ On-Load IP or Default Weather on build """
         self.load_default_weather()
 
-    """ TODO remove processor after Trend, Forecast, History in place """
-    def test_trend_processor(self):
-        from features.trend_and_graph import TrendandGraphProcessor
-        processor = TrendandGraphProcessor()
-        processor.test_data_retrieval("Madrid")
+    
 
     def _configure_grid(self):
         for row in range(6):
@@ -92,7 +88,7 @@ class HomePage(ctk.CTkFrame):
         header_frame.grid_columnconfigure(1, weight=0)  # Language dropdown
         header_frame.grid_columnconfigure(2, weight=0)  # Theme button
 
-        # Menu dropdown - FIXED: removed duplicate
+        # Menu dropdown 
         self.menu_dropdown = ctk.CTkOptionMenu(
             header_frame, 
             values=["Manage Favorites", "Settings", "Help"],
@@ -237,9 +233,7 @@ class HomePage(ctk.CTkFrame):
         )
         weather_alerts_button.grid(row=5, column=0, padx=5, pady=10, sticky="ew")
 
-        # Test button (keep if you want it)
-        test_button = ctk.CTkButton(features_frame, text="Test Trend Data", command=self.test_trend_processor)
-        test_button.grid(row=6, column=0, padx=5, pady=10, sticky="ew")
+        
 
         self.city_entry = city_entry
 
