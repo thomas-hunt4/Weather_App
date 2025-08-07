@@ -447,6 +447,12 @@ class WeatherQuiz:
         percentage = (self.score / self.total_questions) * 100
         return self.score, percentage
     
+    def answer_question(self, is_correct):
+        """Process a quiz answer and update score"""
+        self.total_questions += 1
+        if is_correct:
+            self.score += 1
+    
     def get_score_percentage(self):
         """Get the current score as a percentage"""
         if self.total_questions == 0:

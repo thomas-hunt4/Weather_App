@@ -1129,3 +1129,20 @@ class HomePage(ctk.CTkFrame):
         except Exception as e:
             print(f"Error updating sun widget background: {e}")
 
+    def _close_message_window(self, window, window_attr):
+        """Close message window and reset attribute"""
+        try:
+            if window and window.winfo_exists():
+                window.destroy()
+            setattr(self, window_attr, None)
+        except Exception as e:
+            print(f"Error closing message window: {e}")
+
+    def _auto_close_window(self, window, window_attr):
+        """Auto-close window after timeout"""
+        try:
+            if window and window.winfo_exists():
+                window.destroy()
+            setattr(self, window_attr, None)
+        except Exception as e:
+            print(f"Error auto-closing window: {e}")
