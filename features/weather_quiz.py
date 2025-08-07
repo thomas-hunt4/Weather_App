@@ -82,7 +82,6 @@ class WeatherQuiz:
                 try:
                     df = pd.read_csv(file)
                     if 'city' in df.columns:
-                        print(f"Loaded {file}: {len(df)} rows")
                         dataframes.append(df)
                     else:
                         print(f"Warning: {file} missing 'city' column")
@@ -93,7 +92,7 @@ class WeatherQuiz:
             self.merged_data = pd.concat(dataframes, ignore_index=True, sort=False)
             self.clean_data()
             self.save_merged_data()
-            print(f"Merged data: {len(self.merged_data)} rows, Cities: {list(self.merged_data['city'].unique())}")
+
         else:
             print("No valid CSV files found!")
     
@@ -119,7 +118,6 @@ class WeatherQuiz:
             try:
                 os.makedirs(os.path.dirname(self.quiz_data_path), exist_ok=True)
                 self.merged_data.to_csv(self.quiz_data_path, index=False)
-                print(f"Saved merged data to {self.quiz_data_path}")
             except Exception as e:
                 print(f"Error saving merged data: {e}")
     
@@ -193,7 +191,7 @@ class WeatherQuiz:
     def generate_predefined_questions(self):
         """Generate 15 questions in 3 organized sets of 5 each"""
         if self.merged_data is None:
-            print("No data available for question generation")
+
             # Create fallback questions if no data
             self.questions = self._create_fallback_questions()
             return
@@ -204,7 +202,6 @@ class WeatherQuiz:
         self.questions = []
         
         # SET 1: Temperature-based questions (Questions 1-5)
-        print("Creating Set 1 - Temperature questions...")
         
         # Question 1
         if 'hottest_city' in analysis:
@@ -267,7 +264,7 @@ class WeatherQuiz:
         ])
         
         # SET 2: Weather pattern questions (Questions 6-10)
-        print("Creating Set 2 - Weather pattern questions...")
+        
         
         # Question 6
         if 'rainiest_city' in analysis:
@@ -319,7 +316,6 @@ class WeatherQuiz:
         self.questions.extend(remaining_set2)
         
         # SET 3: Geographic questions (Questions 11-15)
-        print("Creating Set 3 - Geographic questions...")
         
         set3_questions = [
             {
@@ -356,11 +352,6 @@ class WeatherQuiz:
         
         self.questions.extend(set3_questions)
         
-        print(f"Generated {len(self.questions)} total questions:")
-        for i, q in enumerate(self.questions):
-            set_num = (i // 5) + 1
-            q_num = (i % 5) + 1
-            print(f"  Set {set_num}, Q{q_num}: {q['question'][:50]}...")
 
     def _create_fallback_questions(self):
         """Create fallback questions if data loading fails"""
@@ -409,7 +400,6 @@ class WeatherQuiz:
         # Get the current question
         self.current_question = self.questions[question_index]
         
-        print(f"Showing question {self.current_question_index + 1} from set {self.current_question_set + 1}: {self.current_question['question'][:50]}...")
         
         # ADVANCE POSITION FOR NEXT TIME
         self.current_question_index += 1
@@ -423,7 +413,6 @@ class WeatherQuiz:
         self.current_question_index = 0
         self.set_completed = False
         
-        print(f"Starting Set {self.current_question_set + 1}")
         return self.current_question_set + 1
 
     def get_current_set_info(self):
@@ -472,7 +461,7 @@ class WeatherQuiz:
         self.current_question_set = 0
         self.current_question_index = 0
         self.set_completed = False
-        print("Quiz reset - starting from Set 1, Question 1")
+        
     
     def get_quiz_stats(self):
         """Get current quiz statistics"""
@@ -485,12 +474,4 @@ class WeatherQuiz:
             'questions_available': len(self.questions)
         }
     
-    def debug_question_status(self):
-        """Debug method to see current question tracking status"""
-        print(f"DEBUG: Current set: {self.current_question_set}, Current index: {self.current_question_index}")
-        print(f"DEBUG: Total questions available: {len(self.questions) if self.questions else 0}")
-        if self.questions:
-            for i, q in enumerate(self.questions):
-                set_num = (i // 5) + 1
-                q_num = (i % 5) + 1
-                print(f"  Question {i}: Set {set_num}, Q{q_num} - {q['question'][:40]}...")
+    

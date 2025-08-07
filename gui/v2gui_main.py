@@ -61,7 +61,6 @@ class App(ctk.CTk):
             button.configure(text="Dark Mode" if self.theme_mode == "Light" else "Light Mode")
 
     def update_language(self, selected_lang):
-        print(f"Language changed to {selected_lang}")
         from features.language_select import set_language
         set_language(selected_lang)
 

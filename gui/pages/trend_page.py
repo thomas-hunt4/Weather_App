@@ -471,7 +471,6 @@ class TrendPage(ctk.CTkFrame):
             else:
                 city = 'Madrid'  # Fallback city
                 
-            print(f"Loading trend data for: {city}")
             
             # Import and use TrendandGraphProcessor
             from features.trend_and_graph import TrendandGraphProcessor
@@ -491,7 +490,6 @@ class TrendPage(ctk.CTkFrame):
             # Update trend arrows with calculated trends
             self.update_trend_arrows(display_data['max_trends'], display_data['min_trends'])
             
-            print(f"Successfully loaded data for {city}")
             
         except Exception as e:
             print(f"Exception loading trend data: {e}")
@@ -499,7 +497,7 @@ class TrendPage(ctk.CTkFrame):
 
     def load_fallback_data(self):
         """Load test data if real data fails"""
-        print("Loading fallback test data")
+
         
         # Use original test data as fallback
         test_max_trends = [2.5, -1.8, 0.3, 4.2, -2.1, 1.7, -0.5]

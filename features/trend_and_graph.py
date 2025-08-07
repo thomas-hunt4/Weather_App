@@ -27,37 +27,6 @@ class TrendandGraphProcessor:
         return trend_df 
     
 
-
-    def test_data_retrieval(self, city="Madrid"):
-        """Quick test to see what processed data looks like"""
-        print(f"=== Testing process_city_trend for {city} ===")
-    
-        processed_df = self.process_city_trend(city)
-    
-    # Check if we got an error
-        if processed_df is None:
-            print(f"Error retrieving data for {city}")
-            return
-    
-        print(f"DataFrame Shape: {processed_df.shape}")
-        print(f"Columns: {processed_df.columns.tolist()}")
-        print(f"Date range: {processed_df.index.min()} to {processed_df.index.max()}")
-        print(f"\nFirst few rows (formatted):")
-    
-    # Format the display to 2 decimal places
-        with pd.option_context('display.float_format', '{:.2f}'.format):
-            print(processed_df.head())
-    
-        print(f"\nData types:")
-        print(processed_df.dtypes)
-    
-        print(f"\nActual values (should be clean 2 decimals):")
-        for i in range(3):
-            max_temp = processed_df.iloc[i]['temperature_2m_max']
-            min_temp = processed_df.iloc[i]['temperature_2m_min']
-            date = processed_df.index[i].strftime('%Y-%m-%d')
-            print(f"{date}: Max={max_temp:.2f}°C, Min={min_temp:.2f}°C")
-
     def get_seven_day_data(self, city):
         """Get 7 days of temperature data centered on today"""
         try:

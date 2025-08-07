@@ -6,7 +6,7 @@ from data.history_management.auto_api_history_builder import ForecastArchiveAuto
 
 if __name__ == "__main__":
     # Run historical data update once on startup
-    print("Updating historical weather data...")
+    
     try:
         scheduler = ForecastArchiveAutomation()
         scheduler.run_once()

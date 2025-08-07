@@ -13,20 +13,8 @@ client = Client(account_sid, auth_token)
 TWILIO_TOLLFREE = os.getenv("TWILIO_TOLLFREE")
 
 
-""" Twilio testing and setup """
-# message = client.messages.create(
-#     body="Do you even lift, Bro?!",
-#     from_= f"+{TWILIO_TOLLFREE}",
-#     to="+15415958129",
-# )
-
-# print(message.body)
-
-
 
 def twilio_sms(alert):
-    # body= (f"{alert['type']} in {alert['location']}, {alert['country']}!\n"
-    #     f"{alert['instruction']}") 
     body = alert
     message = client.messages.create(
         body=body,

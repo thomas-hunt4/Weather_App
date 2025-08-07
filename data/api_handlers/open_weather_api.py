@@ -5,6 +5,7 @@ from features.weather_extract import WeatherProcessor
 import math
 from PIL import Image
 from io import BytesIO
+import time
 
 
 city = WeatherProcessor.select_city()
@@ -22,7 +23,21 @@ ow_geo_url = os.getenv("open_weather_geo_url")
 
 """ Handling Open Weather API for weather, geo, and associated """
 class OpenWeatherAPI:
-    def fetch_open_weather(self,select_city, language="en"):
+    def fetch_open_weather(self, select_city, language="en"):
+        # Input validation
+        if not select_city or not select_city.strip():
+            return None, "City name cannot be empty"
+        
+        if len(select_city) > 100:
+            return None, "City name is too long"
+        
+        # API key validation
+        if not weather_api_key:
+            return None, "Weather API key not configured"
+        
+        # Basic sanitization
+        select_city = select_city.strip()
+        
         try: 
             params = {
                 "q": select_city,
@@ -35,18 +50,42 @@ class OpenWeatherAPI:
     Revisit for other response codes/developer tab relay/API call counter function 
             """
             
-            response = requests.get(weather_url, params=params)
+            response = requests.get(weather_url, params=params, timeout=5)
+            
             if response.status_code == 200:
-                weather_json_data = response.json()
-                # print(weather_json_data)
-                return weather_json_data, None
+                try:
+                    weather_json_data = response.json()
+                    # Validate essential fields exist
+                    if 'main' not in weather_json_data or 'weather' not in weather_json_data:
+                        return None, "Invalid weather data format received"
+                    return weather_json_data, None
+                except ValueError:
+                    return None, "Invalid JSON response from weather service"
             elif response.status_code == 401: 
-                return self.alternate_fetch_open_weather(select_city)
+                return self.alternate_fetch_open_weather(select_city, language)
                 """ 401 API related/Handle through retry and alternate API """
+            elif response.status_code == 404:
+                return None, f"City '{select_city}' not found. Please check the spelling or try a nearby major city."
+            elif response.status_code == 429:
+                return None, "API rate limit exceeded. Please try again later."
+            elif response.status_code in [500, 502, 503, 504]:
+                # Try alternate API for server errors
+                return self.alternate_fetch_open_weather(select_city, language)
             else:
-                return None, f"City {select_city} not found."
+                return None, f"Weather service error (Code: {response.status_code}). Please try again later."
+                
+        except requests.exceptions.Timeout:
+            return None, "Request timed out. Please check your internet connection and try again."
+        except requests.exceptions.ConnectionError:
+            return None, "Unable to connect to weather service. Please check your internet connection."
+        except requests.exceptions.RequestException as e:
+            return None, f"Network error occurred: {str(e)}"
+        except ValueError as e:
+            return None, f"Invalid response format from weather service: {str(e)}"
+        except KeyError as e:
+            return None, f"Missing expected data in weather response: {str(e)}"
         except Exception as e:
-            return None, str(e)
+            return None, f"Unexpected error: {str(e)}"
     
     """ fetch lat/lon and location information for maps/other features """
     def fetch_open_geo(select_city):

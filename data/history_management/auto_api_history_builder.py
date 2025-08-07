@@ -104,10 +104,6 @@ class ForecastArchiveAutomation:
         last_date = self.get_last_recorded_date()
         cities = self.get_cities_list()
 
-        print(f"Today: {today}")
-        print(f"Last recorded date: {last_date}")
-        print(f"Cities to process: {cities}")
-
         if not cities:
             print("No cities to process")
             return
@@ -118,7 +114,7 @@ class ForecastArchiveAutomation:
             return
         
         date_range = [last_date + timedelta(days=i) for i in range(1, days_diff + 1)]
-        print(f"DEBUG - Date range to process: {date_range}")
+
 
         for city in cities:
             for target_date in date_range:

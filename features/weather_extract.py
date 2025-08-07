@@ -4,9 +4,9 @@ from datetime import datetime
 
 """ View raw data for key value extractions """
 class WeatherProcessor:
-    def view_raw_json(data, title="API Response"):
-        print(f"\n==={title} ===")
-        print(json.dumps(data, indent=2))
+    # def view_raw_json(data, title="API Response"):
+    #     print(f"\n==={title} ===")
+    #     print(json.dumps(data, indent=2))
 
 
     def extract_weather_info(self,weather_json):

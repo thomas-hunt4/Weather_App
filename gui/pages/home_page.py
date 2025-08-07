@@ -108,69 +108,96 @@ class HomePage(ctk.CTkFrame):
             print(f"Translation error: {e}")
 
     def _create_message_toplevel(self, title, message, msg_type="info"):
-        """Create a CustomTkinter toplevel window for messages"""
+        """Enhanced message toplevel with better styling and window management"""
         try:
+            # Prevent multiple windows of the same type
+            window_attr = f"_{msg_type}_window"
+            if hasattr(self, window_attr) and getattr(self, window_attr) and getattr(self, window_attr).winfo_exists():
+                getattr(self, window_attr).focus()
+                return
+
             msg_window = ctk.CTkToplevel(self)
-            msg_window.title(title)
-            msg_window.geometry("400x200")
+            setattr(self, window_attr, msg_window)
             
-            # Make it modal and centered
-            msg_window.transient(self)
+            msg_window.title(title)
+            msg_window.geometry("400x250")
+            msg_window.transient(self.winfo_toplevel())
             msg_window.grab_set()
-            msg_window.focus_force()
             
             # Center the window
             msg_window.update_idletasks()
             x = (msg_window.winfo_screenwidth() // 2) - (400 // 2)
-            y = (msg_window.winfo_screenheight() // 2) - (200 // 2)
-            msg_window.geometry(f"400x200+{x}+{y}")
+            y = (msg_window.winfo_screenheight() // 2) - (250 // 2)
+            msg_window.geometry(f"400x250+{x}+{y}")
             
-            # Configure grid
-            msg_window.grid_rowconfigure(0, weight=1)
-            msg_window.grid_rowconfigure(1, weight=0)
-            msg_window.grid_columnconfigure(0, weight=1)
-            
-            # Color scheme based on message type
+            # Configure colors based on message type
             colors = {
-                "error": ("#ff4444", "#cc0000"),
-                "warning": ("#ffaa00", "#cc8800"),
-                "info": ("#4488ff", "#0066cc")
+                "error": {"bg": "#ff4444", "text": "#ffffff", "button": "#cc3333"},
+                "warning": {"bg": "#ffaa00", "text": "#ffffff", "button": "#cc8800"},
+                "info": {"bg": "#4488ff", "text": "#ffffff", "button": "#3366cc"},
+                "success": {"bg": "#44ff44", "text": "#ffffff", "button": "#33cc33"}
             }
-            text_color, button_color = colors.get(msg_type, colors["info"])
             
-            # Message text
+            color_scheme = colors.get(msg_type, colors["info"])
+            
+            # Configure window layout
+            msg_window.grid_columnconfigure(0, weight=1)
+            msg_window.grid_rowconfigure(0, weight=0)  # Header
+            msg_window.grid_rowconfigure(1, weight=1)  # Content
+            msg_window.grid_rowconfigure(2, weight=0)  # Button
+            
+            # Create header frame with colored background
+            header_frame = ctk.CTkFrame(msg_window, fg_color=color_scheme["bg"])
+            header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
+            
+            # Title label
+            title_label = ctk.CTkLabel(
+                header_frame,
+                text=title,
+                font=ctk.CTkFont(size=16, weight="bold"),
+                text_color=color_scheme["text"]
+            )
+            title_label.pack(pady=10)
+            
+            # Message frame
             text_frame = ctk.CTkFrame(msg_window)
-            text_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
-            text_frame.grid_rowconfigure(0, weight=1)
+            text_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
             text_frame.grid_columnconfigure(0, weight=1)
+            text_frame.grid_rowconfigure(0, weight=1)
             
             message_label = ctk.CTkLabel(
                 text_frame,
                 text=message,
                 font=ctk.CTkFont(size=14),
                 wraplength=350,
-                text_color=text_color
+                justify="center"
             )
             message_label.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
             
-            # OK button
+            # Button frame
+            button_frame = ctk.CTkFrame(msg_window)
+            button_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=(5, 10))
+            
             ok_button = ctk.CTkButton(
-                msg_window,
+                button_frame,
                 text=t("ok_button"),
-                command=msg_window.destroy,
-                fg_color=button_color,
-                hover_color=button_color,
+                command=lambda: self._close_message_window(msg_window, window_attr),
+                fg_color=color_scheme["button"],
+                hover_color=color_scheme["button"],
                 width=100,
                 height=32
             )
-            ok_button.grid(row=1, column=0, pady=(0, 20))
+            ok_button.pack(pady=10)
             
-            # Auto-close after 10 seconds for non-error messages
-            if msg_type != "error":
-                msg_window.after(10000, lambda: msg_window.destroy() if msg_window.winfo_exists() else None)
-                
+            # Auto-close for non-error messages after 8 seconds
+            if msg_type in ["info", "success"]:
+                msg_window.after(8000, lambda: self._auto_close_window(msg_window, window_attr))
+            
+            # Handle window close event
+            msg_window.protocol("WM_DELETE_WINDOW", lambda: self._close_message_window(msg_window, window_attr))
+            
         except Exception as e:
-            print(f"Error creating message toplevel: {e}")
+            print(f"Error creating {msg_type} toplevel: {e}")
             print(f"{msg_type.upper()}: {title} - {message}")
 
     def validate_city_input(self, city_name):
@@ -372,7 +399,6 @@ class HomePage(ctk.CTkFrame):
         try:
             location, error = self.weather_api.get_location_by_ip()
             if location:
-                print(f"{location} detected")
                 self.update_weather(location)
             else:
                 print(f"Could not detect {error}")
@@ -425,9 +451,6 @@ class HomePage(ctk.CTkFrame):
             self.show_warning_toplevel("weather_alert_title", "weather_alert_message", alert=alert)
             
     def update_weather(self, city):
-        """Enhanced weather update with comprehensive error handling"""
-        print(f"Updating weather for {city}")
-        
         if not city:
             self.show_error_toplevel("error_title", "empty_city_name")
             return False
@@ -449,7 +472,6 @@ class HomePage(ctk.CTkFrame):
             
             if weather:
                 self.current_weather = weather
-                print(f"Language call from api {get_language()}")
                 self.display_weather(weather)
                 
                 # save weather data to csv
@@ -782,13 +804,13 @@ class HomePage(ctk.CTkFrame):
         """Build map frame with error handling"""
         try:
             map_frame = ctk.CTkFrame(self, corner_radius=15)
-            map_frame.grid(row=2, column=4, columnspan=3, rowspan=2, padx=20, pady=20, sticky="nsew")
+            map_frame.grid(row=1, column=4, columnspan=3, rowspan=3, padx=20, pady=20, sticky="nsew")
             map_frame.grid_rowconfigure(0, weight=1)
             map_frame.grid_columnconfigure(0, weight=1)
 
             # Map widget with error handling
             try:
-                self.map_widget = tkintermapview.TkinterMapView(map_frame, width=300, height=200, corner_radius=10)
+                self.map_widget = tkintermapview.TkinterMapView(map_frame,corner_radius=10)
                 self.map_widget.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
                 self.map_widget.set_position(41.3, -72.9)  # Default to New Haven
                 self.map_widget.set_zoom(10)
@@ -973,10 +995,7 @@ class HomePage(ctk.CTkFrame):
         """Reset quiz with error handling"""
         try:
             if self.weather_quiz:
-                self.weather_quiz.reset_score()
-                # Reset to first set
-                if hasattr(self.weather_quiz, 'reset_to_first_set'):
-                    self.weather_quiz.reset_to_first_set()
+                self.weather_quiz.reset_quiz()  
                 self._update_score_display()
                 self.load_new_question()
             else:
@@ -984,6 +1003,12 @@ class HomePage(ctk.CTkFrame):
                 self.load_new_question()
         except Exception as e:
             print(f"Error resetting quiz: {e}")
+            # Fallback: create new quiz instance
+            try:
+                self.weather_quiz = WeatherQuiz()
+                self.load_new_question()
+            except Exception as e2:
+                print(f"Error creating new quiz: {e2}")
 
     def _display_question(self, question_data):
         """Display quiz question with error handling"""
@@ -996,18 +1021,34 @@ class HomePage(ctk.CTkFrame):
                 button.destroy()
             self.answer_buttons.clear()
             
+            # Build answer list from correct_answer and wrong_answers
+            if 'answers' in question_data:
+                # If answers key exists, use it directly
+                answers = question_data['answers']
+                correct_answer = question_data.get('correct', question_data['answers'][0])
+            else:
+                # Build answers from correct_answer and wrong_answers
+                correct_answer = question_data.get('correct_answer', '')
+                wrong_answers = question_data.get('wrong_answers', [])
+                
+                # Combine and shuffle answers
+                answers = [correct_answer] + wrong_answers
+                import random
+                random.shuffle(answers)
+            
             # Create new answer buttons
-            for i, answer in enumerate(question_data['answers']):
+            for i, answer in enumerate(answers):
                 btn = ctk.CTkButton(
                     self.answers_frame,
                     text=answer,
-                    command=lambda ans=answer: self._handle_answer(ans, question_data.get('correct', question_data['answers'][0]))
+                    command=lambda ans=answer: self._handle_answer(ans, correct_answer)
                 )
                 btn.grid(row=i, column=0, pady=2, sticky="ew")
                 self.answer_buttons.append(btn)
                 
         except Exception as e:
             print(f"Error displaying question: {e}")
+            print(f"Question data keys: {list(question_data.keys()) if question_data else 'None'}")
             self.question_label.configure(text=t("quiz_display_error"))
 
     def _handle_answer(self, selected_answer, correct_answer):

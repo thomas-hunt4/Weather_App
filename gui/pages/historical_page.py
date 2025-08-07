@@ -189,9 +189,7 @@ class HistoricalPage(ctk.CTkFrame):
             # Get the curated list of cities (top 10 most searched + up to 10 favorites)
             cities = automation.get_cities_list()
             
-            print(f"DEBUG: get_cities_list returned: {cities}")
-            print(f"DEBUG: Top searched: {automation.get_top_searched()}")
-            print(f"DEBUG: User favorites: {automation.get_user_favorites()}")
+    
             
             # Add current city from HomePage if not already included
             try:
@@ -217,7 +215,7 @@ class HistoricalPage(ctk.CTkFrame):
             # Sort alphabetically for better UX
             city_list = sorted(cities)
             
-            print(f"Historical Page: Final city list ({len(city_list)} cities): {city_list}")
+    
             
             # Queue the result
             self.data_queue.put(('cities_loaded', city_list))
